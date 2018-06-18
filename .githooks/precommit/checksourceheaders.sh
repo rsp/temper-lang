@@ -1,4 +1,5 @@
 #!/bin/bash
+# Make sure each file has legal boilerplate.
 
 set -e
 
@@ -7,14 +8,13 @@ pushd "$(git rev-parse --show-toplevel)" >& /dev/null
 EXIT_CODE=0
 
 for nocopy in $( \
-        find .  -name \*.java \
-        | xargs grep -c '^// Licensed under the Apache License, Version 2.0' \
-        | perl -ne 'print if s/:0$//'
+    find .  -name \*.java \
+         -not -exec git check-ignore -q --no-index {} \; \
+         -not -exec grep -q '^// Licensed under the Apache License, Version 2.0' -- {} \; \
+         -print \
 ); do
-    if ! git check-ignore -q "$nocopy"; then
-        echo "Missing copyright header: $nocopy"
-        EXIT_CODE=1
-    fi
+    echo "Missing copyright header: $nocopy"
+    EXIT_CODE=1
 done
 
 popd >& /dev/null

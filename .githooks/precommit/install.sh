@@ -1,4 +1,5 @@
 #!/bin/bash
+# Installs precommit hooks under .git
 
 set -e
 
