@@ -16,16 +16,17 @@ package buffy.lang;
 
 import buffy.lang.diagnostic.Diagnostic;
 import buffy.lang.diagnostic.SourcePosition;
+import com.google.common.base.Charsets;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.protobuf.ByteString;
 
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.URI;
-import java.nio.file.FileSystem;
-import java.nio.file.FileSystems;
-import java.nio.file.Files;
-import java.nio.file.Path;
+import java.nio.ByteBuffer;
+import java.nio.charset.MalformedInputException;
+import java.nio.file.*;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
@@ -50,21 +51,26 @@ final class FileSystemFetcher implements Fetcher {
     if (!uri.isAbsolute() || !"file".equals(uri.getScheme())) {
       return newErrorResult(uri, "Expected absolute file path");
     }
-    // TODO: look up roots if the path starts with C| or similar.
     String[] parts = uri.getPath().split("(?<!^)/");
     String first = parts[0];
     String[] rest = Arrays.copyOfRange(parts, 1, parts.length);
-    Path p = fs.getPath(first, rest);
+    if ("\\".equals(fs.getSeparator()) && first.startsWith("/") && first.endsWith(":")) {
+      // "/C:" -> "C:"
+      first = first.substring(1);
+    }
+    Path path = fs.getPath(first, rest);
 
     byte[] bytes;
     java.nio.file.attribute.FileTime timestamp;
     Path canonPath;
     try {
-      bytes = Files.readAllBytes(p);
-      timestamp = Files.getLastModifiedTime(p);
-      canonPath = p.toRealPath();
+      bytes = Files.readAllBytes(path);
+      timestamp = Files.getLastModifiedTime(path);
+      canonPath = path.toRealPath();
     } catch (IOException ex) {
-      return newErrorResult(uri, "Failed to read " + p + ": " + ex.getMessage());
+      String suffix = (ex instanceof FileNotFoundException || ex instanceof NoSuchFileException)
+              ? "" : ": " + ex;
+      return newErrorResult(uri, "Failed to read " + path + suffix);
     }
 
     ByteString hash;
@@ -79,14 +85,17 @@ final class FileSystemFetcher implements Fetcher {
 
     String content;
     try {
-      content = new String(bytes, "UTF-8");
+      content = Charsets.UTF_8.newDecoder().decode(ByteBuffer.wrap(bytes)).toString();
     } catch (IOException ex) {
-      return newErrorResult(uri, "File " + p + " was not well-formed UTF-8: " + ex.getMessage());
+      String suffix = ex instanceof MalformedInputException ? "" : ": " + ex.toString();
+      return newErrorResult(uri, "File " + path + " was not well-formed UTF-8" + suffix);
     }
+
     return new Result(
             canonPath.toUri(),
             Optional.of(
-                    new Source(content,
+                    new Source(
+                            content,
                             new Metadata(
                                     timestamp.toMillis(),
                                     new Hash(hash, algo)))),

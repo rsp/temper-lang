@@ -54,11 +54,19 @@ public final class SourcePosition {
 
   @Override
   public String toString() {
-    final StringBuilder sb = new StringBuilder("SourcePosition{");
-    sb.append("source=").append(source);
-    sb.append(", start=").append(start);
-    sb.append(", end=").append(end);
-    sb.append('}');
+    final StringBuilder sb = new StringBuilder();
+    if ("file".equals(source.getScheme())) {
+      sb.append(source.getPath());
+    } else {
+      sb.append(source);
+    }
+    if (start != end || start != 0) {
+      sb.append('#');
+      sb.append(start);
+      if (end != start) {
+        sb.append('-').append(end);
+      }
+    }
     return sb.toString();
   }
 }

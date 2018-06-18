@@ -7,6 +7,9 @@ java_binary(
         ":lang",
         "@com_github_pcj_google_options//jar",
     ],
+    visibility = [
+        "//visibility:public",
+    ],
 )
 
 java_library(
@@ -23,4 +26,7 @@ java_library(
             "diagnostic/*.java",
         ],
         exclude=["Buffyc.java"]),
+    visibility = [
+        "//visibility:public",
+    ],
 )

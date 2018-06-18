@@ -52,11 +52,12 @@ public final class Diagnostic {
 
   @Override
   public String toString() {
-    final StringBuilder sb = new StringBuilder("Diagnostic{");
-    sb.append("level=").append(level);
-    sb.append(", msg='").append(msg).append('\'');
-    sb.append(", pos=").append(pos);
-    sb.append('}');
+    final StringBuilder sb = new StringBuilder();
+    sb.append(level);
+    for (SourcePosition p : this.pos) {
+      sb.append(':').append(p);
+    }
+    sb.append(": ").append(msg);
     return sb.toString();
   }
 }

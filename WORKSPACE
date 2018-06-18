@@ -21,3 +21,15 @@ maven_jar(
     artifact = "com.google.protobuf:protobuf-java:3.5.1",
     sha1 = "8c3492f7662fa1cbf8ca76a0f5eb1146f7725acd",
 )
+
+maven_jar(
+    name = "junit",
+    artifact = "junit:junit:4.12",
+    sha1 = "2973d150c0dc1fefe998f834810d68f278ea58ec",
+)
+
+maven_jar(
+    name = "jimfs",
+    artifact = "com.google.jimfs:jimfs:1.1",
+    sha1 = "8fbd0579dc68aba6186935cc1bee21d2f3e7ec1c",
+)
