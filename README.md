@@ -540,16 +540,17 @@ pointed to can change.
 
 _Design decision_: **Scoped types include** all collection types and user defined types.
 
-| Type | Constraints | Attributes |
-| ---- | ----------- | ---------- |
-| boolean |  | imu, pbv |
-| int, long, double | | imu, pbv |
-| char[t] | t is a code-unit | imm, pbv |
-| string[t] | t is a code-unit | imm, sc |
-| ibuffer[t] | t is in pbv | imm, sc |
-| obuffer[t] | t is in pbv | mu, sc |
-| list[t] | | mu, sc |
-| set[t] | | mu, sc |
+| Type              | Constraints      | Attributes  |
+| ----------------- | ---------------- | ----------- |
+| boolean           |                  | imu, pbv    |
+| int, long, double |                  | imu, pbv    |
+| char[t]           | t in code-units  | imm, pbv    |
+| string[t]         | t in code-units  | imm, sc     |
+| ibuffer[t]        | t in pbv         | imm, sc     |
+| obuffer[t]        | t in pbv         | mu, sc      |
+| list[t]           |                  | mu, sc      |
+| set[t]            |                  | mu, sc      |
+| sptr[t]           | t in pbv, sp, sc | mu, sp      |
 
 TODO: Function parameters contain explicit type constraints.  f(x T0, y T1) where x :< y means
 x is allocated in the same or narrower scope than y.  Allows x to be added to the collection y.
@@ -579,8 +580,6 @@ _Design decision_: Types available at *Runtime* are:
   * class types are >:= max[...members, ...parameter] with possible exception of `rec` fields
     that must be const initialized at create time so cannot be cyclic.
 
-
-
 TODO: Dispatch based on type tag, endpoint.  An endpoint is either an opaque symbol or a textual names.
 Symbols can be allocated prior to the *Type* stage.  External APIs must be name based.
 
@@ -594,6 +593,8 @@ TODO: Interfaces.
 
 TODO: Type parameters via erasure.  Declarations determine variance.
 Specialization for builtin types via host language at construct time.
+This means that variance violations due to type mismatch between parameters
+might not be caught.
 
 TODO: Type unions and intersections.
 
