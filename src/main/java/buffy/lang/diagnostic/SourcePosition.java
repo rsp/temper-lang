@@ -20,7 +20,7 @@ import java.net.URI;
 import java.util.Objects;
 
 /**
- * A continguous range of characters within a source file.
+ * A contiguous range of characters within a source file.
  */
 public final class SourcePosition {
   /** The canonical (as determined by the Fetcher) URL of the source file. */
