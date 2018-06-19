@@ -22,7 +22,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import org.junit.After;
-import org.junit.Assert;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -34,7 +33,7 @@ import java.util.Optional;
 public class FileSystemFetcherTest {
 
   private FileSystem fs;
-  private FileSystemFetcher fetcher;
+  private Fetcher fetcher;
 
   void unix() {
     fs = Jimfs.newFileSystem(Configuration.unix());
@@ -67,22 +66,22 @@ public class FileSystemFetcherTest {
   public final void testFileThatExists() throws IOException {
     unix();
     Files.createDirectory(fs.getPath("/foo"));
+    Files.createDirectory(fs.getPath("/foo/baz"));
     Files.write(fs.getPath("/foo/bar.md"), "# Hello, World!".getBytes(Charsets.UTF_8));
 
-    URI uri = URI.create("file:///foo/bar.md");
-    Fetcher.Result result = fetcher.fetch(uri);
-    assertEquals("[]", result.diagnostics.toString());
-    assertTrue(result.source.isPresent());
-    assertEquals("# Hello, World!", result.source.get().contents);
-    assertTrue(
-            "URL is canonical: " + result.canonicalURI,
-            result.canonicalURI.getPath().endsWith("/foo/bar.md")
-                    && result.canonicalURI.getScheme().equals("jimfs"));
-
-    // Check canonicalization
-    URI complicatedUri = URI.create("file:///foo/./baz/../bar.md");
-    Fetcher.Result otherResult = fetcher.fetch(uri);
-    assertEquals(result, otherResult);
+    for (URI uri : new URI[]{
+            URI.create("file:///foo/bar.md"),
+            URI.create("file:///foo/./baz/../bar.md"),
+    }) {
+      Fetcher.Result result = fetcher.fetch(uri);
+      assertEquals("[]", result.diagnostics.toString());
+      assertTrue(result.source.isPresent());
+      assertEquals("# Hello, World!", result.source.get().contents);
+      assertTrue(
+              "URL is canonical: " + result.canonicalURI,
+              result.canonicalURI.getPath().endsWith("/foo/bar.md")
+                      && result.canonicalURI.getScheme().equals("jimfs"));
+    }
   }
 
   @Test
