@@ -31,7 +31,8 @@ public final class Buffyc {
   }
 
   private static void printUsage(OptionsParser parser) {
-    System.err.println(parser.describeOptions(Collections.<String, String>emptyMap(),
-                                              OptionsParser.HelpVerbosity.LONG));
+    System.err.println(parser.describeOptions(
+            Collections.emptyMap(),
+            OptionsParser.HelpVerbosity.LONG));
   }
 }
