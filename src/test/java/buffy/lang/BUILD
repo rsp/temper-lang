@@ -12,5 +12,8 @@ java_tests(
         "FileSystemFetcherTest": [
             "@jimfs//jar",
         ],
+        "FlagOptionsTest": [
+            "@com_github_pcj_google_options//jar",
+        ],
     },
 )

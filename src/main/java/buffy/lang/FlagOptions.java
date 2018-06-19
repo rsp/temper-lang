@@ -21,23 +21,25 @@ import com.google.devtools.common.options.OptionsParsingException;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 
-final class FlagOptions extends OptionsBase implements Options {
+public final class FlagOptions extends OptionsBase implements Options {
+
+  public FlagOptions() {
+    // Invoked reflectively
+  }
+
   @Option(
       name = "fetcher",
       help = "class name of Fetcher implementation that resolves URLs to markdown inputs",
-      defaultValue = "buffy.lang.FileSystemFileSystemFetcher",
+      defaultValue = "buffy.lang.FileSystemFetcher",
       category = "bootstrap",
-      converter = NewInstanceConverter.class
+      converter = NewFetcherInstanceConverter.class
   )
   public Fetcher fetcher;
 
-
   public Fetcher getFetcher() { return fetcher; }
 
-
-
-  static final class NewFetcherInstanceConverter extends NewInstanceConverter<Fetcher> {
-    NewFetcherInstanceConverter() {
+  public static final class NewFetcherInstanceConverter extends NewInstanceConverter<Fetcher> {
+    public NewFetcherInstanceConverter() {
       super(Fetcher.class);
     }
   }
@@ -73,11 +75,10 @@ final class FlagOptions extends OptionsBase implements Options {
       try {
         return ctor.newInstance();
       } catch (IllegalAccessException ex) {
-        throw (OptionsParsingException)
-          new OptionsParsingException(implementationName + " or its constructor is not public");
+        throw new OptionsParsingException(implementationName + " or its constructor is not public");
       } catch (InstantiationException | InvocationTargetException ex) {
         throw (OptionsParsingException)
-          new OptionsParsingException("Failed to instantiate " + implementationName).initCause(ex);
+                new OptionsParsingException("Failed to instantiate " + implementationName).initCause(ex);
       }
     }
 
