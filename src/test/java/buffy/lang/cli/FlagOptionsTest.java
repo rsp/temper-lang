@@ -12,13 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package buffy.lang;
+package buffy.lang.cli;
 
-import com.google.devtools.common.options.OptionPriority;
+import buffy.lang.Options;
 import com.google.devtools.common.options.OptionsParser;
-import org.junit.Test;
-
 import java.lang.reflect.Method;
+import org.junit.Test;
 
 import static org.junit.Assert.assertTrue;
 

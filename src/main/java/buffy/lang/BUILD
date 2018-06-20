@@ -19,11 +19,15 @@ java_library(
         "@com_github_pcj_google_options//jar",
         "@com_google_guava//jar",
         "@com_google_protobuf//jar",
+        "@jsr305//jar",
     ],
     srcs = glob(
         [
             "*.java",
+            "ast/*.java",
+            "cli/*.java",
             "diagnostic/*.java",
+            "gather/*.java",
         ],
         exclude=["Buffyc.java"]),
     visibility = [

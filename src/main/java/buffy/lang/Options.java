@@ -14,6 +14,8 @@
 
 package buffy.lang;
 
-interface Options {
+import buffy.lang.gather.Fetcher;
+
+public interface Options {
   public Fetcher getFetcher();
 }

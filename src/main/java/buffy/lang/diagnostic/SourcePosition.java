@@ -30,21 +30,30 @@ public final class SourcePosition {
   /** char (UTF-16) offset within the file past the end of the problem. */
   public final int end;
 
+  /**
+   * Constructor.
+   * @param source non null.
+   * @param start <= end
+   */
   public SourcePosition(URI source, int start, int end) {
-    this.source = Preconditions.checkNotNull(source);
     Preconditions.checkArgument(start >= 0 && start <= end);
+    this.source = Preconditions.checkNotNull(source);
     this.start = start;
     this.end = end;
   }
 
   @Override
   public boolean equals(Object o) {
-    if (this == o) return true;
-    if (o == null || getClass() != o.getClass()) return false;
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
     SourcePosition that = (SourcePosition) o;
-    return start == that.start &&
-            end == that.end &&
-            Objects.equals(source, that.source);
+    return start == that.start
+            && end == that.end
+            && Objects.equals(source, that.source);
   }
 
   @Override

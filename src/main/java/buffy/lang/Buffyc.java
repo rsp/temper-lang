@@ -14,13 +14,15 @@
 
 package buffy.lang;
 
+import buffy.lang.cli.FlagOptions;
 import com.google.devtools.common.options.OptionPriority;
 import com.google.devtools.common.options.OptionsParser;
 import java.util.Collections;
 
-/** Placeholder for buffy compiler */
+/** Buffy compiler main class. */
 public final class Buffyc {
 
+  /** Main method that invokes the compiler based on FlagOptions. */
   public static void main(String[] argv) {
     OptionsParser parser = OptionsParser.newOptionsParser(FlagOptions.class);
     parser.parseAndExitUponError(OptionPriority.COMMAND_LINE, "argv", argv);

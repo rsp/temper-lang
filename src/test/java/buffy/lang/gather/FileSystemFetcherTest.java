@@ -12,23 +12,24 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package buffy.lang;
+package buffy.lang.gather;
 
 import com.google.common.base.Charsets;
 import com.google.common.jimfs.Configuration;
 import com.google.common.jimfs.Jimfs;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import org.junit.After;
-import org.junit.Test;
 
 import java.io.IOException;
 import java.net.URI;
 import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.util.Optional;
+
+import org.junit.After;
+import org.junit.Test;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 public class FileSystemFetcherTest {
 
@@ -57,7 +58,7 @@ public class FileSystemFetcherTest {
     unix();
     URI uri = URI.create("file:///foo/bar.md");
     Fetcher.Result result = fetcher.fetch(uri);
-    assertEquals(uri, result.canonicalURI);
+    assertEquals(uri, result.canonicalUri);
     assertEquals(Optional.empty(), result.source);
     assertEquals("[SEVERE:/foo/bar.md: Failed to read /foo/bar.md]", result.diagnostics.toString());
   }
@@ -78,9 +79,9 @@ public class FileSystemFetcherTest {
       assertTrue(result.source.isPresent());
       assertEquals("# Hello, World!", result.source.get().contents);
       assertTrue(
-              "URL is canonical: " + result.canonicalURI,
-              result.canonicalURI.getPath().endsWith("/foo/bar.md")
-                      && result.canonicalURI.getScheme().equals("jimfs"));
+              "URL is canonical: " + result.canonicalUri,
+              result.canonicalUri.getPath().endsWith("/foo/bar.md")
+                      && result.canonicalUri.getScheme().equals("jimfs"));
     }
   }
 
@@ -110,8 +111,8 @@ public class FileSystemFetcherTest {
     assertTrue(result.source.isPresent());
     assertEquals("# Hello, World!", result.source.get().contents);
     assertTrue(
-            "URL is canonical: " + result.canonicalURI,
-            result.canonicalURI.getPath().endsWith("/foo/bar.md")
-                    && result.canonicalURI.getScheme().equals("jimfs"));
+            "URL is canonical: " + result.canonicalUri,
+            result.canonicalUri.getPath().endsWith("/foo/bar.md")
+                    && result.canonicalUri.getScheme().equals("jimfs"));
   }
 }

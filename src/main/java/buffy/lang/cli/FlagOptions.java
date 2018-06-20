@@ -12,8 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package buffy.lang;
+package buffy.lang.cli;
 
+import buffy.lang.Options;
+import buffy.lang.gather.Fetcher;
+import buffy.lang.gather.FileSystemFetcher;
 import com.google.devtools.common.options.Converter;
 import com.google.devtools.common.options.Option;
 import com.google.devtools.common.options.OptionsBase;
@@ -30,13 +33,15 @@ public final class FlagOptions extends OptionsBase implements Options {
   @Option(
       name = "fetcher",
       help = "class name of Fetcher implementation that resolves URLs to markdown inputs",
-      defaultValue = "buffy.lang.FileSystemFetcher",
+      defaultValue = "buffy.lang.gather.FileSystemFetcher",
       category = "bootstrap",
       converter = NewFetcherInstanceConverter.class
   )
   public Fetcher fetcher;
 
-  public Fetcher getFetcher() { return fetcher; }
+  public Fetcher getFetcher() {
+    return fetcher;
+  }
 
   public static final class NewFetcherInstanceConverter extends NewInstanceConverter<Fetcher> {
     public NewFetcherInstanceConverter() {
@@ -61,24 +66,28 @@ public final class FlagOptions extends OptionsBase implements Options {
       try {
         implClass = cl.loadClass(implementationName).asSubclass(type);
       } catch (ClassCastException ex) {
-        throw new OptionsParsingException("Cannot cast " + implementationName + " to " + type.getName());
+        throw new OptionsParsingException(
+                "Cannot cast " + implementationName + " to " + type.getName());
       } catch (ClassNotFoundException ex) {
-        throw new OptionsParsingException("Could not find class " + implementationName + " for " + type.getName());
+        throw new OptionsParsingException(
+                "Could not find class " + implementationName + " for " + type.getName());
       }
 
       Constructor<? extends T> ctor;
       try {
         ctor = implClass.getConstructor();
       } catch (NoSuchMethodException ex) {
-        throw new OptionsParsingException("Could not find public zero argument constructor in " + implementationName);
+        throw new OptionsParsingException(
+                "Could not find public zero argument constructor in " + implementationName);
       }
       try {
         return ctor.newInstance();
       } catch (IllegalAccessException ex) {
-        throw new OptionsParsingException(implementationName + " or its constructor is not public");
+        throw new OptionsParsingException(
+                implementationName + " or its constructor is not public");
       } catch (InstantiationException | InvocationTargetException ex) {
-        throw (OptionsParsingException)
-                new OptionsParsingException("Failed to instantiate " + implementationName).initCause(ex);
+        throw (OptionsParsingException) new OptionsParsingException(
+                "Failed to instantiate " + implementationName).initCause(ex);
       }
     }
 

@@ -13,7 +13,8 @@
 // limitations under the License.
 
 /**
- * Diagnostic information about buffy source file processing.
+ * Gathering involves finding needed source files so that they can be feed into
+ * the front of the compiler pipeline.
  */
 @javax.annotation.ParametersAreNonnullByDefault
-package buffy.lang.diagnostic;
+package buffy.lang.gather;

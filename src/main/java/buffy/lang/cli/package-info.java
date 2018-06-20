@@ -13,7 +13,7 @@
 // limitations under the License.
 
 /**
- * Diagnostic information about buffy source file processing.
+ * Command line tool support classes.
  */
 @javax.annotation.ParametersAreNonnullByDefault
-package buffy.lang.diagnostic;
+package buffy.lang.cli;

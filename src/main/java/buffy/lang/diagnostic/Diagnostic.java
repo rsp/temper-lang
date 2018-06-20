@@ -28,6 +28,11 @@ public final class Diagnostic {
   public final String msg;
   public final ImmutableList<SourcePosition> pos;
 
+  /**
+   * @param level The severity of the message.
+   * @param msg Developer readable message text.
+   * @param pos Positions if any related to the message.
+   */
   public Diagnostic(Level level, String msg, ImmutableList<SourcePosition> pos) {
     this.level = Preconditions.checkNotNull(level);
     this.msg = Preconditions.checkNotNull(msg);
@@ -36,12 +41,16 @@ public final class Diagnostic {
 
   @Override
   public boolean equals(Object o) {
-    if (this == o) return true;
-    if (o == null || getClass() != o.getClass()) return false;
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
     Diagnostic that = (Diagnostic) o;
-    return Objects.equals(level, that.level) &&
-            Objects.equals(msg, that.msg) &&
-            Objects.equals(pos, that.pos);
+    return Objects.equals(level, that.level)
+            && Objects.equals(msg, that.msg)
+            && Objects.equals(pos, that.pos);
   }
 
   @Override

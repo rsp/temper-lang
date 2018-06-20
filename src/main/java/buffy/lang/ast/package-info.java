@@ -13,7 +13,7 @@
 // limitations under the License.
 
 /**
- * Diagnostic information about buffy source file processing.
+ * A buffy abstract syntax tree.
  */
 @javax.annotation.ParametersAreNonnullByDefault
-package buffy.lang.diagnostic;
+package buffy.lang.ast;

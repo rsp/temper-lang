@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package buffy.lang;
+package buffy.lang.gather;
 
 import buffy.lang.diagnostic.Diagnostic;
 
@@ -31,42 +31,53 @@ import java.util.Optional;
 public interface Fetcher {
   /**
    * Given an absolute URI, tries to resolve it to source.
-   * It is the caller's responsibility to resolve relative URIs to absolute using the containing source's absolute URL.
+   * It is the caller's responsibility to resolve relative URIs to absolute
+   * using the containing source's absolute URL.
    */
   public Result fetch(URI uri);
 
+  /**
+   * The result of fetching a source file.
+   */
   public static final class Result {
-    public final URI canonicalURI;
+    /** The canonical URL which is used to avoid multiply instantiating the same module. */
+    public final URI canonicalUri;
+    /** The source if any was found. */
     public final Optional<Source> source;
+    /** Any problems encountered during fetching.  Non-empty if source is absent. */
     public final ImmutableList<Diagnostic> diagnostics;
 
-    Result(URI canonicalURI,
+    Result(URI canonicalUri,
            Optional<Source> source,
            ImmutableList<Diagnostic> diagnostics) {
-      this.canonicalURI = Preconditions.checkNotNull(canonicalURI);
+      this.canonicalUri = Preconditions.checkNotNull(canonicalUri);
       this.source = Preconditions.checkNotNull(source);
       this.diagnostics = Preconditions.checkNotNull(diagnostics);
     }
 
     @Override
     public boolean equals(Object o) {
-      if (this == o) return true;
-      if (o == null || getClass() != o.getClass()) return false;
+      if (this == o) {
+        return true;
+      }
+      if (o == null || getClass() != o.getClass()) {
+        return false;
+      }
       Result result = (Result) o;
-      return Objects.equals(canonicalURI, result.canonicalURI) &&
-              Objects.equals(source, result.source) &&
-              Objects.equals(diagnostics, result.diagnostics);
+      return Objects.equals(canonicalUri, result.canonicalUri)
+              && Objects.equals(source, result.source)
+              && Objects.equals(diagnostics, result.diagnostics);
     }
 
     @Override
     public int hashCode() {
-      return Objects.hash(canonicalURI, source, diagnostics);
+      return Objects.hash(canonicalUri, source, diagnostics);
     }
 
     @Override
     public String toString() {
       final StringBuilder sb = new StringBuilder("Result{");
-      sb.append("canonicalURI=").append(canonicalURI);
+      sb.append("canonicalUri=").append(canonicalUri);
       if (source.isPresent()) {
         sb.append(", source='").append(source.get()).append('\'');
       }
@@ -76,6 +87,9 @@ public interface Fetcher {
     }
   }
 
+  /**
+   * A source file.
+   */
   public static final class Source {
     public final String contents;
     public final Metadata metadata;
@@ -87,11 +101,15 @@ public interface Fetcher {
 
     @Override
     public boolean equals(Object o) {
-      if (this == o) return true;
-      if (o == null || getClass() != o.getClass()) return false;
+      if (this == o) {
+        return true;
+      }
+      if (o == null || getClass() != o.getClass()) {
+        return false;
+      }
       Source source = (Source) o;
-      return Objects.equals(contents, source.contents) &&
-              Objects.equals(metadata, source.metadata);
+      return Objects.equals(contents, source.contents)
+              && Objects.equals(metadata, source.metadata);
     }
 
     @Override
@@ -123,11 +141,15 @@ public interface Fetcher {
 
     @Override
     public boolean equals(Object o) {
-      if (this == o) return true;
-      if (o == null || getClass() != o.getClass()) return false;
+      if (this == o) {
+        return true;
+      }
+      if (o == null || getClass() != o.getClass()) {
+        return false;
+      }
       Metadata metadata = (Metadata) o;
-      return timestamp == metadata.timestamp &&
-              Objects.equals(contentHash, metadata.contentHash);
+      return timestamp == metadata.timestamp
+              && Objects.equals(contentHash, metadata.contentHash);
     }
 
     @Override
@@ -163,8 +185,8 @@ public interface Fetcher {
         return false;
       }
       Hash hash = (Hash) o;
-      return Objects.equals(bytes, hash.bytes) &&
-              Objects.equals(algo, hash.algo);
+      return Objects.equals(bytes, hash.bytes)
+              && Objects.equals(algo, hash.algo);
     }
 
     @Override
