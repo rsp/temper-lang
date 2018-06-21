@@ -18,10 +18,9 @@ import buffy.lang.diagnostic.Diagnostic;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
-import com.google.protobuf.ByteString;
 
+import javax.annotation.Nonnull;
 import java.net.URI;
-import java.util.Base64;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -87,116 +86,4 @@ public interface Fetcher {
     }
   }
 
-  /**
-   * A source file.
-   */
-  public static final class Source {
-    public final String contents;
-    public final Metadata metadata;
-
-    Source(String contents, Metadata metadata) {
-      this.contents = Preconditions.checkNotNull(contents);
-      this.metadata = Preconditions.checkNotNull(metadata);
-    }
-
-    @Override
-    public boolean equals(Object o) {
-      if (this == o) {
-        return true;
-      }
-      if (o == null || getClass() != o.getClass()) {
-        return false;
-      }
-      Source source = (Source) o;
-      return Objects.equals(contents, source.contents)
-              && Objects.equals(metadata, source.metadata);
-    }
-
-    @Override
-    public int hashCode() {
-      return Objects.hash(contents, metadata);
-    }
-
-    @Override
-    public String toString() {
-      final StringBuilder sb = new StringBuilder("Source{");
-      String contentsAbbrev = contents.length() <= 16
-              ? contents
-              : contents.substring(0, 13) + "...";
-      sb.append("contents='").append(contentsAbbrev).append('\'');
-      sb.append(", metadata=").append(metadata);
-      sb.append('}');
-      return sb.toString();
-    }
-  }
-
-  public static final class Metadata {
-    public final long timestamp;
-    public final Hash contentHash;
-
-    Metadata(long timestamp, Hash contentHash) {
-      this.timestamp = timestamp;
-      this.contentHash = Preconditions.checkNotNull(contentHash);
-    }
-
-    @Override
-    public boolean equals(Object o) {
-      if (this == o) {
-        return true;
-      }
-      if (o == null || getClass() != o.getClass()) {
-        return false;
-      }
-      Metadata metadata = (Metadata) o;
-      return timestamp == metadata.timestamp
-              && Objects.equals(contentHash, metadata.contentHash);
-    }
-
-    @Override
-    public int hashCode() {
-      return Objects.hash(timestamp, contentHash);
-    }
-
-    @Override
-    public String toString() {
-      final StringBuilder sb = new StringBuilder("Metadata{");
-      sb.append("timestamp=").append(timestamp);
-      sb.append(", contentHash=").append(contentHash);
-      sb.append('}');
-      return sb.toString();
-    }
-  }
-
-  public static final class Hash {
-    public final ByteString bytes;
-    public final String algo;
-
-    Hash(ByteString bytes, String algo) {
-      this.bytes = Preconditions.checkNotNull(bytes);
-      this.algo = Preconditions.checkNotNull(algo);
-    }
-
-    @Override
-    public boolean equals(Object o) {
-      if (this == o) {
-        return true;
-      }
-      if (o == null || getClass() != o.getClass()) {
-        return false;
-      }
-      Hash hash = (Hash) o;
-      return Objects.equals(bytes, hash.bytes)
-              && Objects.equals(algo, hash.algo);
-    }
-
-    @Override
-    public int hashCode() {
-      return Objects.hash(bytes, algo);
-    }
-
-    @Override
-    public String toString() {
-      return algo + ":" + Base64.getEncoder().encodeToString(bytes.toByteArray());
-    }
-  }
 }
