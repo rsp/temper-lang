@@ -16,7 +16,6 @@ package buffy.lang.cli;
 
 import buffy.lang.Options;
 import buffy.lang.gather.Fetcher;
-import buffy.lang.gather.FileSystemFetcher;
 import com.google.devtools.common.options.Converter;
 import com.google.devtools.common.options.Option;
 import com.google.devtools.common.options.OptionsBase;
