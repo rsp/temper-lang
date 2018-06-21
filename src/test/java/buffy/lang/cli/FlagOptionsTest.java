@@ -19,7 +19,7 @@ import com.google.devtools.common.options.OptionsParser;
 import java.lang.reflect.Method;
 import org.junit.Test;
 
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.assertNotNull;
 
 public final class FlagOptionsTest {
 
@@ -34,7 +34,7 @@ public final class FlagOptionsTest {
       if (method.getName().startsWith("get")) {
         // Make sure it does not throw.
         Object result = method.invoke(options);
-        assertTrue(method.getName(), result != null);
+        assertNotNull(method.getName(), result);
       }
     }
   }
