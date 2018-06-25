@@ -1,8 +1,10 @@
+BINARY_SRCS = [
+    "Buffyc.java",
+]
+
 java_binary(
     name = "buffyc",
-    srcs = [
-        "Buffyc.java",
-    ],
+    srcs = BINARY_SRCS,
     deps = [
         ":lang",
         "@com_github_pcj_google_options//jar",
@@ -15,10 +17,13 @@ java_binary(
 java_library(
     name = "lang",
     deps = [
-        "@atlassian_commonmark//jar",
         "@com_github_pcj_google_options//jar",
         "@com_google_guava//jar",
         "@com_google_protobuf//jar",
+        "@flexmark//jar",
+        "@flexmark_anchorlink//jar",
+        "@flexmark_util//jar",
+        "@jsoup//jar",
         "@jsr305//jar",
     ],
     srcs = glob(
@@ -29,7 +34,7 @@ java_library(
             "diagnostic/*.java",
             "gather/*.java",
         ],
-        exclude=["Buffyc.java"]),
+        exclude=BINARY_SRCS),
     visibility = [
         "//visibility:public",
     ],

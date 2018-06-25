@@ -9,11 +9,14 @@ java_tests(
         "@junit//jar",
     ],
     test_deps = {
+        "cli/FlagOptionsTest": [
+            "@com_github_pcj_google_options//jar",
+        ],
         "gather/FileSystemFetcherTest": [
             "@jimfs//jar",
         ],
-        "cli/FlagOptionsTest": [
-            "@com_github_pcj_google_options//jar",
+        "gather/MarkdownFileTest": [
+            "@com_google_protobuf//jar",
         ],
     },
 )

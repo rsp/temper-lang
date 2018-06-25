@@ -16,9 +16,11 @@ package buffy.lang.gather;
 
 import com.google.common.base.Preconditions;
 
-import javax.annotation.concurrent.NotThreadSafe;
 import java.util.HashSet;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
+import javax.annotation.concurrent.NotThreadSafe;
 
 /**
  * An HTML identifier which corresponds to a document fragment.
@@ -27,15 +29,32 @@ public final class HtmlIdentifier {
 
   /** The text of the identifier. */
   public final String text;
-  /**
-   * True if this identifier was ambiguous with a previously seen identifier
-   * so might be less stable w.r.t. edits.
-   */
-  public final boolean ambiguous;
 
-  HtmlIdentifier(String text, boolean ambiguous) {
-    this.text = Preconditions.checkNotNull(text);
-    this.ambiguous = ambiguous;
+  HtmlIdentifier(String text) {
+    Preconditions.checkArgument(text != null && !text.isEmpty());
+    this.text = text;
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    HtmlIdentifier that = (HtmlIdentifier) o;
+    return Objects.equals(text, that.text);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(text);
+  }
+
+  @Override
+  public String toString() {
+    return "{HtmlIdentifier " + text + "}";
   }
 
   /**
@@ -48,7 +67,7 @@ public final class HtmlIdentifier {
 
     private final Set<String> assigned = new HashSet<>();
 
-    private static long TYPE_BITS =
+    private static final long TYPE_BITS =
             (1L << Character.COMBINING_SPACING_MARK)
                     | (1L << Character.NON_SPACING_MARK)
                     | (1L << Character.LOWERCASE_LETTER)
@@ -88,7 +107,18 @@ public final class HtmlIdentifier {
       REPLACEMENTS = new String(chars);
     }
 
-    /** Autoassigns an identifier. */
+    /**
+     * If the given text specifies an ID and is not yet assigned,
+     * records it as assigned and returns the ID specified.
+     */
+    public Optional<HtmlIdentifier> unassigned(String identifierText) {
+      if (assigned.add(identifierText)) {
+        return Optional.of(new HtmlIdentifier(identifierText));
+      }
+      return Optional.empty();
+    }
+
+    /** Auto-assigns a previously unassigned identifier. */
     public HtmlIdentifier assignIdentifier(String decodedInnerText) {
       StringBuilder sb = new StringBuilder(decodedInnerText.trim());
       int pos = 0;
@@ -119,8 +149,7 @@ public final class HtmlIdentifier {
       }
       sb.setLength(pos);
       String id = sb.toString();
-      boolean ambiguous = !assigned.add(id);
-      if (ambiguous) {
+      if (!assigned.add(id)) {
         int counter = 1;
         sb.append('-');
         int length = sb.length();
@@ -132,7 +161,7 @@ public final class HtmlIdentifier {
           id = sb.toString();
         } while (!assigned.add(id));
       }
-      return new HtmlIdentifier(id, ambiguous);
+      return new HtmlIdentifier(id);
     }
   }
 }

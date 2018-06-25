@@ -70,7 +70,7 @@ public final class SourcePosition {
       sb.append(source);
     }
     if (start != end || start != 0) {
-      sb.append('#');
+      sb.append(':');
       sb.append(start);
       if (end != start) {
         sb.append('-').append(end);

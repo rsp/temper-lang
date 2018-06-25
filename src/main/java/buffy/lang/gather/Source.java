@@ -16,16 +16,19 @@ package buffy.lang.gather;
 
 import com.google.common.base.Preconditions;
 
+import java.net.URI;
 import java.util.Objects;
 
 /**
  * A source file.
  */
 public final class Source {
+  public final URI canonicalUrl;
   public final String contents;
   public final Metadata metadata;
 
-  Source(String contents, Metadata metadata) {
+  Source(URI canonicalUrl, String contents, Metadata metadata) {
+    this.canonicalUrl = Preconditions.checkNotNull(canonicalUrl);
     this.contents = Preconditions.checkNotNull(contents);
     this.metadata = Preconditions.checkNotNull(metadata);
   }
