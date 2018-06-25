@@ -19,7 +19,6 @@ import buffy.lang.diagnostic.Diagnostic;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 
-import javax.annotation.Nonnull;
 import java.net.URI;
 import java.util.Objects;
 import java.util.Optional;

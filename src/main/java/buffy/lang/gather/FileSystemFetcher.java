@@ -26,7 +26,11 @@ import java.io.IOException;
 import java.net.URI;
 import java.nio.ByteBuffer;
 import java.nio.charset.MalformedInputException;
-import java.nio.file.*;
+import java.nio.file.FileSystem;
+import java.nio.file.FileSystems;
+import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
+import java.nio.file.Path;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
@@ -94,21 +98,23 @@ public final class FileSystemFetcher implements Fetcher {
       return newErrorResult(uri, "File " + path + " was not well-formed UTF-8" + suffix);
     }
 
+    URI canonUrl = canonPath.toUri();
     return new Result(
-            canonPath.toUri(),
-            Optional.of(
-                    new Source(
-                            content,
-                            new Metadata(
-                                    timestamp.toMillis(),
-                                    new Hash(hash, algo)))),
-            ImmutableList.of());
+        canonUrl,
+        Optional.of(
+            new Source(
+                canonUrl,
+                content,
+                new Metadata(
+                    timestamp.toMillis(),
+                    new Hash(hash, algo)))),
+        ImmutableList.of());
   }
 
   private Result newErrorResult(URI uri, String message) {
     return new Result(
-            uri, Optional.empty(),
-            ImmutableList.of(new Diagnostic(
-                    Level.SEVERE, message, ImmutableList.of(new SourcePosition(uri, 0, 0)))));
+        uri, Optional.empty(),
+        ImmutableList.of(new Diagnostic(
+            Level.SEVERE, message, ImmutableList.of(new SourcePosition(uri, 0, 0)))));
   }
 }
