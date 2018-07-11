@@ -22,11 +22,7 @@
 hs_err_pid*
 
 # bazel output directories
-/bazel-bin
-/bazel-buffy-lang
-/bazel-genfiles
-/bazel-out
-/bazel-testlogs
+/bazel-*
 
 # Emacs droppings
 *~
