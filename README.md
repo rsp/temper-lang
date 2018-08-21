@@ -1,47 +1,134 @@
+# Temper Language
+
+*Temper* - to lessen the force or effect of something;
+to heat and then cool in order to make hard.
+
+Also, a convenient language for robust programs.
+
 ## Design Goals
 
-### Libraries should interoperate well with many host languages.
+### Dynamic language features with fewer drawbacks
 
-Nodes in distributed systems like web applications often use ad-hoc
-methods to parse and unparse message bodies.  The message body formats
-are often well-understood and well-documented, but not all languages
-that people write systems in have good library support for parsing,
-unparsing, and composing message bodies.  When failures result, they
-are too often security relevant.
+_Goal_: to provide the benefits of dynamic programming while producing
+static systems.
 
-The first high-level goal is to provide a way to write libraries for
-simple, well-understood, but tricky transformations at the borders
-between nodes in distributed systems.  These libraries should be
-accessible from most "host" languages that people use to write
-distributed systems.
+A language is highly dynamic when a runtime value can substitute for
+many syntactic elements.
 
-Initially, interop with (C, Java, Python, C#, Go, and Rust) should
-allow us to work with code on most of the major multi-language VMs and
-allow a single library to serve many clients.
+For example, in JavaScript
 
-_Design decision_: Code will not run in a dedicated VM or be tied to a
-single existing VM.  Instead the primary deployment strategy will be
-**code-generation** alongside small runtime-support libraries.
+```js
+x.foo;  // static access to property foo
+a = 'foo', x[a];  // runtime value 'foo' substitutes for property name
 
-Most of the targeted host languages have garbage collection, but not all.
+import * as ns from './module';  // static load of external module
+b = './module';
+const ns = import(b);  // runtime value substitutes for module name
 
-_Design decision_: Memory allocations will be primarily **scoped allocations**,
-possibly with scoped reference-counted pointers.
+z = (1 + 1);  // static specification of arithmetic expression
+c = 'z = (1 + 1);', eval(c);  // runtime value substitutes for inline code
+```
 
-_Design decision_: **Auto-expanding buffers** will be the primary way to
-allocate space for an output of unknown unpredictable size.
+Many claim that dynamism makes developers more productive.  This seems
+true, at least during the early stages of a project.
 
-Host languages are imperative more than functional languages.
+Because runtime values can substitute for source code written by
+trusted developers, an attacker who controls some inputs has more
+opportunities to cause the program to act as if the attacker wrote
+portions of the program.  Dynamic systems are prone to unexpected
+changes in behavior when exposed to crafted inputs, and these changes
+in behavior are too often security relevant.
 
-_Design decision_: Idiomatic code will be **primarily imperative** so that
-there is an analogous construct for most constructs in the target language.
+```js
+x = {};
+a = 'constructor', b = 'sideEffect()';  // Attacker controlled
+x[a][a](b)();
+
+c = '../../../../attacker-controlled-file';
+import(c);
+
+d = 'just.about.anything()';
+eval(d);
+```
+
+Commonly used dynamic languages allow user-code to do the following:
+
+| Use case | Dynamic element |
+| -------- | --------------- |
+| Lazy loading | Module name |
+| Load module named in config file | Module name |
+| Load module based on naming convention | Module name |
+| Find service supplier among locally installed modules | Module name |
+| Serialize a user type | RTTI, reflect over type members |
+| Deserialize a user type | RTTI, reflect over type members |
+| Bridge user types to external systems like DB | Reflect over type members |
+| Domain specific languages, syntax extensions | Some of (function, type, module) declaration |
+| Membranes | Object identity, message interception, message redispatch |
+| Duck typing | Type introspection |
+| Monkeypatching, polyfilling | Mutable builtins, or replacable builtins and message interception & redispatch |
+| Value provenance & declassification | Module identity |
+| Relative resource resolution | Module metadata |
+| Code-referencing log messages | Module metadata, call stack |
+| Ad-hoc queries: pure expressions with free variables bound via a data bundle. | Runtime function declaration or library support |
+| Dependency Injection | Actual parameter lists |
+| Partial classes | Type members |
+
+This language aims to provide enough powers to programmers to enable these
+use cases when the values that substitute for code from trusted developers
+also come from trusted sources.
+
+### Produce analyzable systems
+
+_Goal_: make it easy to write code that is easy for humans to review.
+
+_Goal_: produce code artifacts that are amenable to automated static analysis.
+
+Checking the correctness of security-relevant code is hard.  It's
+harder when the language makes it hard to write reviewable code.
+
+The second high-level goal is to favor language features that enable
+case-based reasoning by reviewers, and eschew features that
+almost-always do what one intends but come with caveats that require
+lots of work to check.
+
+It is also a goal to produce code artifacts that are amenable to sound
+static analysis. There are highly regarded static analyzers for
+JavaScript, Python, and other dynamic languages but most widely-used
+ones are unsound.  They are useful for catching common developer
+errors but less so for testing system-level security properties.
+
+### Interoperate with many host languages.
+
+_Goal_: wide reuse of common functions over untrusted inputs.
+
+Another high-level goal is to provide a way to write libraries for
+simple, well-understood, but tricky-to-implement transformations at
+the borders between nodes in distributed systems.  These libraries
+should be accessible from most "host" languages that people use to
+write distributed systems so that we can incrementally move tricky
+handling of untrusted inputs out of confusable dynamic language code.
+
+Initially, interop with (C, C#, Go, Java, JavaScript, Python, and
+Rust) should allow us to work with code on most of the major
+multi-language VMs and allow a single library to serve many clients.
+
+### Manage string complexity
+
+_Goal_: first-class support for common string encodings.
+
+A language is a set of string, but some are sets of strings of Unicode
+scalar values, some of UTF-16 code-unit strings, and some of octet
+strings.
+
+Much code ignores these differences.  This may not matter when a
+non-malicious human authored the string.  Getting this right when
+dealing with crafted inputs is a common source of implementation
+complexity and subtle bugs.
 
 Host languages differ in how they represent character/byte content
-internally and this determines the efficient way to chunk such
-content.  Similarly, parsing inputs requires understanding its input
-representation.  Some languages are specified either as strings of
-codepoints, many as UTF_16 code units, and some like URIs as sequences
-of octets.
+internally and this determines the efficient way to chunk and process
+such content.  Similarly, parsing inputs requires understanding its
+input representation.
 
 | Host Lang  | Natural Representations |
 | ---------- | ----------------------- |
@@ -58,34 +145,629 @@ of octets.
 | URL        | octets          |
 | JSON       | UTF-8 by caveat |
 
-_Design decision_: **Types specify code-unit granularity** when they
+
+### Accommodate casual developers
+
+_Goal_: **casual developers** should be able to effectively use code
+written by experts based on a partial mental model of the language.
+
+It's easier to explain this by example than to formally define.  A
+Java library developer who understands the details of generic type
+variance can put `<T extends Bound>` and `<T extends Super>` in
+the right places in their library code.
+
+Many Java developers never define a type parameter except perhaps via
+copy/paste, but when they use libraries that do, type variance bleeds
+through; the library user must sprinkle wildcard bounds
+`<? extends MyClass>` through their code or else use raw types which
+are a source of unsoundness.
+
+One strategy might be to allow expert developers to pick defaults for
+casual developers.  Applying this to variance in Java, if the API
+developer could say, "consider any variant binding for this type
+parameter to be one of (covariant, contravariant) unless specified
+otherwise" the concept of variance would bleed through to the casual
+developer far less often, and the casual developer could more often
+achieve goals based on a mental model of the language that doesn't
+include type parameter variance without recourse to unsafe features
+like raw types.
+
+
+
+## Design Choices
+
+### Monotonically decreasing dynamism
+
+_Decision_: The language will be a multi-staged programming language.
+
+Staged programming languages allow some user code to run during the
+compilation or loading process to specify code that can run at a later
+stage.
+
+Staged programming languages provide an opportunity to bring
+domain-specific languages into the shipped binary, so that static
+analysis does not require bridging embedded-language-specific analyzers.
+
+Similar to macros, staged programming allows replacing some sources of
+dynamism with functions that desugar to parse trees.
+
+Our security story is:
+
+1. The last stage is runtime.
+1. Compilation units proceed through stages independently, but
+   all units transition to the runtime stage at the same time.
+1. Assume that no untrusted inputs reach the system before the
+   runtime stage.  The language allows unidirectional suspicion via
+   loading in a constrained environment.
+   Source code supply chain security is out of band.
+1. No dynamic operators are available during the runtime stage.
+1. Therefore, no untrusted input can reach a source of dynamism.
+1. Caveat: user code can create powerful reflective APIs via
+   code generation during an early stage.  We hope to mitigate
+   this risk by using multiple stages so that a module would
+   have to opt-into a code generating library during an early
+   stage to have such a high-level of power.
+   If dynamism decreases monotonically, we hope human reviewers
+   can afford to be less suspicious of code that runs later,
+   allowing a system that does most work in later stages to
+   be efficiently reviewed.
+
+Rejected approaches:
+
+  *  Some systems have relied on *taintedness* to protect sensitive operators
+     from crafted strings; strings carry an *evil bit* which sensitive operators
+     check, and a concatenation of a tained string is itself tainted.
+     Tainting systems have a poor history of providing strong guarantees.
+  *  Trademarks per "Protection in Programming Languages" by Morris Jr. allow
+     user-code to pre-approve values for use in a particular context.
+     This trades-off integrity/confidentiality for availability, though
+     trademarks can correspond to types to catch errors early.
+
+Dynamic powers include the powers to
+
+*  declare a compilation unit (*cu*)
+*  load code into a compilation unit (*lc*)
+*  mutate a compilation units token stream (*tk*)
+*  convert a token into a symbol (*sy*)
+*  add/modify a member of a state vector (*mv*)
+*  import symbols into a compilation unit (*im*)
+*  add/modify a declaration to a scope (*ms*)
+*  add/modify instructions in a block (*mi*)
+*  add a local declaration to a block scope (*ld*)
+*  enumerate declarations in a scope and members of a state vector (*en*)
+*  traverse the AST (*tr*)
+*  modify metadata tables (*md*)
+*  abort processing (*ab*)
+
+The lifecycle of a compilation unit proceeds thus:
+
+1.  _G_ather Code: An out-of-band module gatherer fetches the source
+    code and specifies a canonical reference for the module.
+1.  _P_arse to Tree: Imports in prologue gathered; module lexed to a
+    token stream, possibly using syntax extensions defined in imported
+    module; tokens lifted to AST.
+1.  Rewrite _T_ree: Imported user code gets to manipulate the parse
+    tree.  Imports at this stage may provide non-hermetic macros.
+1.  _T_ype Check Code: Types inferred, digest of values that reached
+    functions checked against actual types.  All member accesses
+    resolved to symbols.
+1.  _E_xpand Macros: Imported user code gets to manipulate the parse
+    tree.  Imports at this stage must be hermetic -- may create new
+    temporary symbols but may not add references to symbols in scope
+    not provided to the macro as inputs.
+1.  _C_heck Access: User code can veto imports, and member references.
+    Digest of prior accesses checked.
+1.  _X_late Host Language Code: Produces an AST for each target
+    language, produce target language artifacts including debug
+    tables.  There are no initial plans to expose this AST to user
+    code.
+1.  _R_un Program: The program may receive untrusted inputs.
+
+| &darr; Stage / &rarr; Power | **cu** | **lc** | **tk** | **mv** | **sy** | **im** | **ms** | **mi** | **ld** | **en** | **tr** | **md** | **ab** |
+| --------------------------- | ------ | ------ | ------ | ------ | ------ | ------ | ------ | ------ | ------ | ------ | ------ | ------ | ------ |
+| **Gather**                  | X      | X      | X      | X      | X      | X      | X      | X      | X      | X      | X      | X      | X      |
+| **Parse**                   |        |        | X      | X      | X      | X      | X      | X      | X      | X      | X      | X      | X      |
+| **Tree**                    |        |        |        | X      | X      | X      | X      | X      | X      | X      | X      | X      | X      |
+| **Type**                    |        |        |        |        | X      | X      | X      | X      | X      | X      | X      | X      | X      |
+| **Expand**                  |        |        |        |        |        | X      | X      | X      | X      | X      | X      | X      | X      |
+| **Check**                   |        |        |        |        |        |        |        |        |        | X      | X      | X      | X      |
+| **Xlate**                   |        |        |        |        |        |        |        |        |        | X      | X      | X      | X      |
+| **Run**                     |        |        |        |        |        |        |        |        |        |        |        |        | X      |
+
+Test code has elevated privileges, so test running happens separately
+from the lifecycle above.
+
+#### Glossary
+
+*Block*: a tuple of (an optional outer (parameter) scope, an inner
+scope, a set of declarations, and a sequence of statement AST nodes)
+
+*Scope*: a map from names to declarations and some non-normative metadata.
+Prior to the end of the syntax phase, names may be strings.
+Afterwards they are symbol values.
+
+*Declaration*: a symbol, and optionally a type reference, and
+optionally a block that gates access.
+Each declaration becomes immutable before its creating module enters
+the *Type* stage.
+
+*Type*: a state vector, and some non-normative metadata.
+Each type's state vector becomes immutable before its creating module
+enters the *Type* stage.
+
+*Module*: a set of imports, a scope that contains exported symbols,
+and a block.  A module is always either before a particular stage, in
+processing for a particular stage, or just after processing a
+particular stage.
+
+*State Vector*: an ordered series of declarations scoped to an
+instance of a struct type.
+
+*AST Node*: either (node type, block, children) or (node type, leaf
+data).  An AST node becomes immutable before its creating module
+enters the *Type* stage.
+
+### Memory Management
+
+The set of host languages include languages that don't use garbage
+collection.  To interoperate well with C++ code, temper should not
+require a garbage collector.
+
+_Decision_: Manage memory via scoped allocation and/or reference counting.
+
+See cycle avoidance below.
+Early stages will run in a host environment that does have GC, so
+before the code generation stages, we need not prove absence of
+cycles early.
+
+Requiring the consistent time and order of deallocation side effects
+that reference counting provides across all target languages would
+burden target languages with efficient GC.
+
+_Descision_: Make no guarantees about the order or time of
+**deallocation side effects**.  Most deallocation side effects in real
+systems relate to resource exhaustion.  Core APIS should scope
+resource use, or simplify clear hand-off of responsibility to
+release when a resource isn't bounded to a scope as when it
+moves over a channel or deallocation awaits Promise resolution.
+
+
+### Typing
+
+There is no goal that requires a program be fully statically
+typed from the first stage through the last.
+
+In a staged language, some stages may define types used by later
+stages, so we might dodge some chicken-egg issues by not resolving
+type references until later.
+
+Types may be mutable during early stages, so statically typing
+during those stages might not provide meaningful guarantees.
+
+It is a goal to interoperate well with target languages that are
+statically typed, and to produce statically analyzable output,
+so having static types during the code generation stage would
+be very helpful.
+It is also a goal to interoperate with target languages that
+are unsound around type parameters since they deal with
+generics via erasure.
+
+The early stages run code that figures out how to build the project.
+Widely used build systems are not statically typed.  Bazel/skylark,
+buck, gradle, grunt, make, mvn, rake all have dynamically typed
+configuration languages.  Arguably in XML-based BUILD configurations
+like Ant, Maven, and MSBuild, elements serve similar goals to static
+type declarations and Maven does do consistency checks when loading
+the POM (project object model).  Scripts that wrap these build systems
+are usually written in untyped shell scripts or mini-languages built
+on them like `./configure`, though gradually-typed TypeScript is
+seeing some adoption in this niche.
+
+Many reliable systems seem to use types in inner loops that run in
+production but eschew them in bootstrapping code that runs early in
+the project lifecycle.  These dynamically typed systems scale when
+they effectively bound side effects to produce static artifacts, like
+build dependency graphs, that drive complex tools written in static
+languages.
+Absent a compelling reason, Temper should not buck the trend by
+requiring types for code that only runs during and mainly serves to
+build the project.
+
+_Decision_: Temper will aim for **eventual type consistency**.
+Assuming inputs from the host environment are well typed, a program in
+the *Run* stage will preserve type safety.  Before the type checking
+stage, types are advisory, and the language will optimistically assume
+that types pass.  The runtime will make a best effort to catch type
+errors eventually, by keeping a digest of values that bind to typed
+symbols, so the type checking stage can recheck values against types
+once they are fully resolved and immutable.  This may be incomplete
+since there is no way to get a tight type bound on the type parameter
+for an empty container.
+
+_Decision_: Type mismatches do not lead to undefined behavior.
+Any attempt to use a value as a type that it is clearly not aborts
+processing.
+
+Reference counting leaks in the presence of reference cycles.
+Ephemerons are not a perfect solution.
+
+_Decision_: **Types form a partial order** so that a state vector
+element cannot transitively refer to itself.  A state vector element
+may be "recursive" in which case it can refer to its own type, but
+must be immutable post construction and initialized prior to any use
+of `this` by the constructor.  This allows acyclic object graphs,
+without the risk of cycles.  Adjacency matrices can serve for cyclic
+data structures with some loss of ergonomics but no loss of
+generality.
+
+It is a goal to interoperate with untyped languages like JavaScript
+where objects function as *bags of properties*.  These bags are often
+untrusted, for example, when decoded from an untrusted string of JSON.
+It is a goal to offload processing of untrusted inputs from these
+dynamic languages.
+
+_Decision_: Temper will provide two **bag types** to interoperate with
+dynamic languages that correspond to bags of key/value pairs and bag
+of ordered elements.  User code may not create or mutate these meaning
+that memory management is entirely up to the host language.
+
+Some host languages dispatch object member access based on two factors:
+
+*  The static type which determines the available overloads
+*  The runtime type which determines the override of the chosen overloads.
+
+For example, Java has a notion of overload specificity for the first.
+C++ involves implicit coercion and parameter default values in the
+first and `virtual` for the second.
+
+Some host languages, JavaScript, for example, do not allow overloaded
+member declarations, so idiomatic JavaScript uses predicates over
+`arguments.length` and runtime types to accomodate multiple different
+calling conventions via the same method name.
+
+No target host language does true double dispatch.
+
+Temper cannot rely on the static type for dispatch and maintain
+identical method call semantics during loosely typed early stages and
+strongly typed later stages.
+
+Cover methods provide the appearance of overloading -- providing a
+single method with a variable number of arguments that inspects the
+arguments and then calls out to a helper with a more specific
+signature.  An optimization could relink calls from the cover method
+to signature specific variants, but bottom-typey values like *null*
+used as actual parameters might defeat this requiring some cover
+methods to actually appear in compiled output.
+
+_Descision_: Temper will provide **no overloading**.
+Nor will member availability depend on the static type.
+A common *uncovering* optimization pass will help code-generating
+backends efficiently dispatch based on actual argument signature.
+
+Overriding provides no complications as long as all instances of
+subtyped types carry runtime-type information.
+
+Union types can make dispatch ambiguous.  If we want to resolve
+the token `foo` in `x.foo` to a symbol based on the static type of
+`foo`.
+
+For tagged unions we can generate a cover function over all members of
+the union that define a member named `foo`.
+
+_Decision_: No untagged union types.
+
+Smalltalk's *doesNotUnderstand* turns member access failure
+into a message, and JavaScript proxy handlers can provide the
+same.  To support this level of dynamism, cover functions would
+need to be able to explicitly dispatch to *doesNotUnderstand*
+traps.
+
+Type parameters help humans reason about the correctness of
+code, but are a source of unsoundness.  Java's type system
+is unsound around both type parameters and exception checking
+because both are compiler fictions that do not exist at the
+VM level.  Interoperability with untyped languages also means
+that a program cannot take inputs that bind arbitrary type
+parameters and both efficiently/exhaustively check them.
+Unsound type systems are a source of false confidence.
+
+_Descision_: Provide generic types by **erasure**.
+Focus on making sure type expectation mismatches are not
+a source of undefined behavior.
+
+Generics, even with erasure catch more bugs than they cause,
+analysis tools can ignore them, and we can assist
+generic-skeptical human code review by providing a way to
+format code with generic parameters elided.
+
+We have discussed typing without discussing types which
+we will discuss after a look at control flow.
+
+### Control Flow
+
+Pure functional code is easy to reason about.  It is a goal to
+interoperate with many host languages.  Few (none) of these languages
+are either functional or pure.
+
+_Decision_: Code will not run in a dedicated VM or assume a single
+existing VM.  Instead the primary deployment strategy will be
+**code-generation** alongside small runtime-support libraries.
+
+_Decision_: Idiomatic code will be **primarily imperative** so that
+there is an analogous construct for most constructs in the target
+language.
+
+When writing security-critical code, a major source of bugs is
+branches that start to construct an output, realize that the
+current strategy will not work, but then fail to clean up after
+themselves before handing control over to an alternate strategy.
+
+_Decision_: Statement level constructs, as in Icon, may succeed
+or fail, and **success or failure drives branching in flow-control
+constructs**.  For example, the primary iteration (see decision re
+imperative above) will continue as long as the body succeeds in making
+progress towards a goal.
+
+_Decision_: **Failing branches' side effects will be
+invisible** except for out-of-band concerns like debug logs.  All
+operations will *fail purely*; though imperative, an operation that
+fails to produce a result cannot modify any inputs or shared state.
+
+Hopefully this will make it easy to express computations in terms
+of searches over a problem space that accumulate an output.
+
+_Decision_: **Auto-expanding buffers** will be the primary way to
+allocate space for an output of unknown unpredictable size.
+
+Instead of writing a program that interacts with the file system,
+we might accumulate a series of changes which the host environment
+can replay.
+
+_Decision_: Temper will **provide neither direct file\-system
+nor shell** access via builtin libraries.
+
+_Decision_: We are not going to rely upon or implement transactional
+memory for all host languages.  Mutable types must define **snapshot
+and rollback** operations.  For example, buffers could be append-only,
+and do not allow random-access instead providing access by scoped
+cursors.  Rolling back a buffer means truncating it to its length when
+the ultimately failing operation started.
+
+Sometimes it is best not to wait to produce an entire output before
+causing some change:
+
+*  Part of an HTTP response might reach the client and start
+   rendering while the server works on the rest.
+*  An actor might dispatch some messages to other actors and
+   expect to receive some messages in return.
+
+_Decision_: Temper will provide **committable output buffers**.
+Committing an output buffer means that any attempt to modify
+content before the commit point is an unrecoverable failure.
+
+Committing a buffer backed by a flushable stream satisfies
+the HTTP response use case.
+
+Committing a write-only buffer could tranfer content from the producer
+side of a queue to the consumer side, or dispatch events to a pub-sub
+model handling the actor model use case.
+
+It is a goal for Temper to be a good language for dealing with
+untrusted input strings.  Analytic grammars often use
+Kleene-operators which are analogous to flow-control constructs.
+
+| Grammar Operator  | Syntax              | Semanics                |
+| ----------------- | ------------------- | ----------------------- |
+| `/` - Alternation | `code0 || code1`    | Result of `code0` if it succeeds, otherwise result of `code1`. |
+| `?` - Maybe       | `? code`            | Syntactic sugar for `code || {}` |
+| Concatenation     | `code0 ; code1`     | Performs `code0` then `code1`.  Succeeds if both succeed. |
+| `+` - Repetition  | `+ code`            | Performs `code` while successful and *progressing*. Succeeds if the first iteration does. |
+| `*` - Repetition  | `* code`            | Syntactic sugar for `{ + code } || {}` |
+
+_Descision_: **Prefix Kleene operators** will provide common flow
+control.  These are prefix like the ABNF used in RFCs in part to
+avoid confusion between infix/postfix operators.
+
+_Decision_: **Types specify code-unit granularity** when they
 represent binary or textual content.  Parameterizing string and buffer
 types should suffice.
 
+The repetition operator refers to a concept of *progress*.  Assuming search
+progressively consumes an input left and right to construct an output,
+we define progress in terms of `>` between a snapshot of the input cursor
+before entering the loop body and a snapshot of the input cursor after
+exiting the loop body.  In this view, an infinite concatenation of empty
+strings is itself the empty string.  While arbitrary, this view is well
+defined and promotes halting.
 
-### Suitable for writing code that can be checked by humans
+Analytic parser generators do a lot of work to avoid or handle
+left-recursion.  Search algorithms that might do the equivalent of
+LR need to take similar steps.
 
-Checking the correctness of security-relevant code is hard.
-It's harder when the language makes it hard to write reviewable code.
+_Decision_: A variant of *Grow the seed* will handle LR-like problems
+in search computations that consume an input left-to-right and
+building an output left-to-right.
 
-The second high-level goal is to favor language features that enable
-case-based reasoing by reviewers, and eschew features that almost-always
-do what one intends but come with caveats that require lots of work to
-check.
+#### Grow the seed via post-processing of embedded markers
 
-Most host languages use a combination of exceptions, return value
-checking, and option types to communicate failure of an operation.
+1.  LR is "imminent" when a production (identified by a symbol)
+    is about to reenter with the same input buffer at the same cursor
+    as an outstanding use.
+    This probably requires keeping a set of (symbol, cursor) pairs but
+    stack introspection would suffice.
+1.  On detecting an imminent LR, we push a *start-LR* marker onto the
+    output.
+1.  Treat LR uses as failing so that control proceeds to non-LR
+    alternatives.
+1.  Do the below while progressing.
+    1.  Push a *grow-LR* marker onto the output.
+    1.  Execute the production but on an *LR* use, do not recurse and
+        instead emit a *LR*
+    1.  Fail unless there was exactly one *LR* use since the beginning
+        of the loop.
+1.  Push an *end-LR* marker onto the output.
 
-_Design decision_: Statement level constructs, as in Icon, may succeed or
-fail, and **success or failure drives branching in flow-control constructs**.
-For example, the primary iteration (see decision re imperative above)
-will continue as long as the body succeeds in making progress towards
-a goal.
+This provides enough structure for a post-processing pass to
+reconstruct the output by shifting content between *grow-LR* and *LR*
+before the corresponding *start-LR* marker in reverse order and
+eliding all the markers.
 
-_Design decision_: **Failing branches' side effects will be invisible**
-except for out-of-band concerns like debug logs.  All operations will
-*fail purely*; though imperative, an operation that fails to produce a
-result cannot modify any inputs or shared state.
+### Type Lifecycle
+
+As noted before, mutable builtin types must report snapshot and
+recover operations, and user types will need defensive copying.
+
+During interpreation in early stages, journaling will help, but in
+compiled code for runtime, we need to be able to eliminate most values
+in scope from the set that need copying or snapshotting in inner
+loops.
+
+Most mutations to an object happen shortly after creation at which
+point the object enters a steady state.
+
+The same design choices that make a hashmap-like structure efficient
+for rollback often make it leass efficient for heavy random reads.
+
+_Descision_: the lifecycle of objects will be explicit in the type
+system.  Objects may go one-way from mutable to immutable via
+a *constify* operation that returns a read-only version.  Freezing
+is deep.
+
+For nominal types, a name suffix will encode information about the
+lifecycle stage.
+
+| Nominal type | Lifecycle stage | Relationship       |
+| ------------ | --------------- | ------------------ |
+| *T*          | Unknown         | Abstract base type |
+| *T\_b*       | Mutable builer  | Subtype of *T*     |
+| *T\_f*       | Frozen          | Subtype of *T*     |
+
+*T* defines a `constify` method (() &rarr; *Tf*) which, when a *T* is a
+*T\_f*, is a simple narrowing cast.
+
+Snapshot & rollback become expensive if we have to reason about all
+the mutable state that could have changed in other scopes.
+
+_Decision_: Post type checks, **only frozen values may escape** the
+scope in which they were created to a broader scope except as a result
+of a function call.
+
+The set of values that might roll back due to a failing operation is
+then the set of values reachable via symbols on the stack, and
+any mutable global state.
+
+### Types
+
+_Decision_: Separate types from the variable namespace by convention.
+Builtin type names start with a capital letter, and by convention
+variable names start with a lowercase letter.  (This will not limit
+user-code identifiers to character sets with case-distinctions.)
+
+Some common interfaces:
+
+| Interface             | Description                                       |
+| --------------------- | ------------------------------------------------- |
+| *Const*               | Types that are immutable                          |
+| *Mut*[T <: Const]     | Mutable type that constifies to *T*               |
+| *Commitable*          | May promise not to rollback                       |
+| *Snapshot*[T <: Mut]  | The result of snapshoting a *T*                   |
+| *Hashable*            | Reducable to a hash code.                         |
+| *Comparable*[T]       | Supports (<, =, >) style comparison against T     |
+| *Series*[T]           | Supports fetching start and end cursors.          |
+| *Cursor*[T]           | A position in a particular *Series*. *Comparable* |
+
+Temper will encourage using buffers with cursors to process input and
+accumulate output.
+
+| Type     | Can Read | Can Append | Can Commit | Monotonic Length | Description                                |
+| -------- | -------- | ---------- | ---------- | ---------------- | ------------------------------------------ |
+| Ibuf[T]  | Y        | N          | N          | Y                | A readable input buffer                    |
+| Obuf[T]  | N        | Y          | Y          | Y                | A commitable dead-drop.  Writes may block. |
+| Iobuf[T] | Y        | Y          | N          | Y                | Constifies to an Ibuf[T]                   |
+| Istr[T]  | Y        | N          | N          | N                | A readable stream that may block.          |
+
+Key-value maps can build complex relations via maps whose values are maps.
+Weak maps provide a place to store associated information without
+pinning keys in memory.  Unfortunately, when information relates to
+two or more values, weak maps can only be fully weak with respect to one.
+
+_Decision_: Support maps via a variadic relation type.
+
+A `Rel[[T0, T1], T2]` defines a 3-column relation that is efficient to index
+by T0, T1, and (T0, T1).  `Map[T0, T1]` is equivalent to `Rel[[T0], T1]`.
+
+Type parameters may actually bind to:
+
+*  A single type: `T`
+*  A code unit kind (see string goal): `char.UTF8`.  This may extend to other values.
+*  Zero or more actual bindings: `[P0, P1, P2]`
+
+Formal type parameters may have bounds:
+
+*  A type bound: `T <: SuperType` or `T >: SubType`
+*  One of a group of values: `CU in char`
+*  A variadic bound: `[*B]`
+
+
+## Staging execution
+
+TODO: other languages have a code type, and operators that inline code.
+
+TODO: goal to allow casual users of early-stage operators meaning explicit dereference out.
+
+TODO: decision reify stage.
+
+TODO: functions may be applicable during some stages.
+
+TODO: symbols, including imports may be available during some stages.
+
+TODO: exports may only be usable during certain stages.
+
+TODO: semantics specified in terms of satisfaction.
+
+TODO: each regular stage does a root-to-leaf walk satisfying any nodes that are satisfiable and will not be satisfiable in the next stage.
+
+TODO: each node carries its owning module.
+
+TODO: currentStage(module), and callback to recursively satisfy an input available as globals
+
+TODO: imports import from a stage of a module which means we need to keep old-stage versions of modules around.
+
+TODO: for imports to be able to operate at lex stage, there needs to be a fixed-syntax prologue.
+
+TODO: decision, prologue grammar.
+
+TODO: stage specifier grammar as prefix operator.
+
+
+
+
+
+
+
+
+
+_Decision_: **Reify lifecycle stage** of a program.
+
+
+
+One common reason that APIs relax access control is to allow test code
+privileged access to better interrogate production code.  Debugging
+machinery often provide access that violate access controls so that
+a developer running locally can better interrogate a running system.
+
+_Design decision_: Treat **tests as attacks that abuses debug
+access with love**.  Explicitly distinguish test code from production
+code and provide test code with more operators which ignore internal
+access controls.
+
+
+
+
+
+
+
+
 
 This will have consequences for the kinds of allowable aliasing and
 possible interleavings of operations that might fail or succeed
@@ -94,13 +776,8 @@ independently.
 When recovering from a failing branch, mutations that might be visible
 to later attempts must be rolled back.
 
-_Design decision_: We are not going to rely upon or implement
-transactional memory for N host languages.  Mutable types must
-define **snapshot and rollback** operators.  For example, all buffers
-(see above) could be append-only, cannot themselves contain mutable
-values, and do not allow random-access instead providing access by
-scoped cursors.  Rolling back a buffer means truncating it to its length
-when the ultimately failing operation started.
+
+
 
 This should hopefully allow crafting algorithms as searches over a
 problem space, letting reviewers focus on concerns like coverage, and
@@ -110,11 +787,6 @@ a failing branch and branches attempted later often requires non-local
 reasoning which is a burden on reviewers, especially when they have to
 consider what later branches might rely upon in the future.)
 
-_Design decision_: This will **provide neither file\-system nor shell** access
-via builtin libraries.  If we need to revisit this, we may provide a way to
-*commit* a buffer that contains a series of shell and/or file mutation
-operations, so that rolling back past the commit point results in a
-system-wide panic.
 
 ### Single source of truth for functions
 
@@ -133,65 +805,6 @@ example, parsing and stringifying a URL and ideally composing a URL
 from trusted and untrusted content should be derivable from a
 declarative grammar, possibly with annotations or hints.
 
-### Monotonically decreasing dynamism
-
-Many programming languages have a load or compile step, and reflective or
-introspective operators that relate runtime strings to programming language
-symbols.
-
-It is easier to check a program for correctness if a reviewer knows that
-attacker-controlled strings cannot reach these reflective or introspective
-operators.
-
-Rejected approaches:
-
-  *  Some systems have relied on *taintedness* to protect sensitive operators
-     from crafted strings; strings carry an *evil bit* which sensitive operators
-     check, and a concatenation of a tained string is itself tainted.
-     Tainting systems have a poor history of providing strong guarantees.
-  *  Trademarks per "Protection in Programming Languages" by Morris Jr. are better
-     but reflection/introspection also complicate code elimination and require
-     speccing meta-objects so I'd rather satisfy reflective/introspective use
-     cases without reflection/introspection.
-
-Implementing mini-declarative languages (above) typically requires macros
-unless you plan on parsing at runtime which is itself prone to abuse by
-attacker-controlled string.
-
-_Design decision_: **Reify lifecycle stage** of a program.  Operator definitions
-and uses can be tagged with a range of lifecycle stages.  Program elements that
-execute at later stages are available as parse trees to earlier stages.
-The last stage, *Run*, has no reflective or introspective access and is the only
-stage that happens after a program has been converted to generated code in a host
-language.
-
-Tenatively, lifecycle stages include:
-
-1.  *Gather* Dependencies
-1.  *Syntax* to Parse Tree
-1.  *Expand* Macros
-1.  *Type* Check Code
-1.  *Control* Access
-1.  *Interface* Implemented Checks
-1.  *Bundle* Types and Declarations into Namespaces
-1.  *Generate* Host Language Code
-1.  *Run*
-
-This means that introspection, meta-circularity, macroing can all
-happen before untrusted input reaches a system.  We assume all inputs
-that reach the system are trustworthy -- we trust everything
-*Gather*ed and treat software supply-chain security as out-of-band.
-
-One common reason that APIs relax access control is to allow test code
-privileged access to better interrogate production code.  Debugging
-machinery often provide access that violate access controls so that
-a developer running locally can better interrogate a running system.
-
-_Design decision_: Treat **tests as attacks that abuses debug
-access with love**.  Explicitly distinguish test code from production
-code and provide test code with more operators which ignore internal
-access controls.
-
 ### Single source of truth for documentation
 
 It would be nice to have a single source of truth for documentation.
@@ -205,14 +818,14 @@ The gatherer parses the markdown looking for two kinds of constructs:
 *  Fenced code blocks like
     <pre>
 
-    \`\`\`bff
+    \`\`\`tmpr
     code
     \`\`\`
 
     </pre>
-*  named URLs like `[name]: example/url/that/ends/with/file.bff.md`.
+*  named URLs like `[name]: example/url/that/ends/with/file.tmpr.md`.
 
-The fetcher resolves URLs whose path ends in `.bff.md` against the containing
+The fetcher resolves URLs whose path ends in `.tmpr.md` against the containing
 source file's URL to get an absolute URL and recursively fetches and gathers
 any not previously fetched.
 
@@ -228,11 +841,12 @@ but absent such concerns should notify the gatherer that they are the same.
 _Design decision_: **A code blocks language id** determines how the gatherer
 treats it.
 
-| Lang id | Role                                                 |
-| ------- | ---------------------------------------------------- |
-| `bff`   | Production Code                                      |
-| `bft`   | Privileged Test Code                                 |
-| `bfe`   | Example code.  A mini unprivileged test that we leave in generated docs but test to make sure the docs make sense. |
+| Lang id | Role                                                            |
+| ------- | --------------------------------------------------------------- |
+| `tmpr`  | Production Code                                                 |
+| `tmpt`  | Privileged Test Code                                            |
+| `tmpe`  | Example code.  A mini unprivileged test left in generated docs. |
+| `tmpp`  | Example code.  Instead of passing it should panic.              |
 
 ### Kernelizability
 
@@ -364,9 +978,9 @@ _Design decision_: **Exports must appear in the prologue.**
 
 _Design decision_: **Exports may export to explicit importers, or to
 the containing file.**  This makes it much easier to write example code.
-See `bfe\`\`\`...\`\`\`` blocks above.  A block can export the same  might be exported
-multiple times with different restrictions, and during different ranges of
-stages.
+See `tmpe\`\`\`...\`\`\`` blocks above.  A block can export the same
+might be exported multiple times with different restrictions, and
+during different ranges of stages.
 
 ```bnf
 Export ::== "export" ExportBindings ("to" ExportReceivers)? ExpertRestrictions?;
@@ -498,113 +1112,6 @@ If there's a way to compare two snapshots, we could avoid that with
 
 Memory management requires that we bound all heap-allocation either to a scope or
 by reference counting.
-
-_Design decision_: **Classify types as *pass-by-value* (pv), *outlive*
-(ol), *scoped* (sc), *scoped-ptr* (sp)** based on whether they can
-be copied from one stack scoped location to another, whether they predate
-and outlive a call from the external library, and whether they must be stack
-allocated.
-
-  *  Pass-by-value values can leak to globals and pass around
-     promisciously since they involve no deallocation step, and
-     snapshotting involves byte copy.
-  *  Scoped values must only be reachable from the scope by **one name
-     at a time**.  They must not escape from a scope to an outer scope
-     -- e.g., they cannot leak to globals.
-  *  Outlive values must not be mutable by user code, so user code can
-     ignore outlive values since they are host language code's
-     responsibility.  They must not leak to globals so that the host
-     environment can deallocate them without affecting later library
-     calls into user code.
-  *  Scoped pointer values can pass as part of a collection to a
-     narrower scope.  The pointed to value might change via the
-     pointer.  The pointer itself does not survive a scope, and its
-     scope must be narrower than its referent.
-
-_Design decision_: **Classify types as *immutable* (imu), *mutable* (mu)** based
-on whether they can change.  Immutable types need not support snapshot, rollback.
-Only *scoped* types can be *mutable*.
-
-_Design decision_: **Pass-by-value types include**
-`boolean`, `int`, `long`, `double`, `char[t in cu]` (`char` takes code unit type).
-Collections of *pbv* types are not themselves *pbv*.  All *pbv* types are *imu*.
-
-_Design decision_: **Outlive types include** *baglist* and *bag* to interoperate
-with loosely typed host languages like JavaScript which pass around bags of
-properties and untyped arrays.
-
-_Design decision_: **Scoped-ptr types include** `ptr[t]`.
-If `t` is *sc* then the pointed to value must be available when the pointer is
-created, and `ptr[t]` is *imu*.  If `t` is *pv* then `ptr[t]` is *mu*.  The value
-pointed to can change.
-
-_Design decision_: **Scoped types include** all collection types and user defined types.
-
-| Type              | Constraints      | Attributes  |
-| ----------------- | ---------------- | ----------- |
-| boolean           |                  | imu, pbv    |
-| int, long, double |                  | imu, pbv    |
-| char[t]           | t in code-units  | imm, pbv    |
-| string[t]         | t in code-units  | imm, sc     |
-| ibuffer[t]        | t in pbv         | imm, sc     |
-| obuffer[t]        | t in pbv         | mu, sc      |
-| list[t]           |                  | mu, sc      |
-| set[t]            |                  | mu, sc      |
-| sptr[t]           | t in pbv, sp, sc | mu, sp      |
-
-TODO: Function parameters contain explicit type constraints.  f(x T0, y T1) where x :< y means
-x is allocated in the same or narrower scope than y.  Allows x to be added to the collection y.
-
-TODO:
-ordered types simplify memory management, and prevent the need for rollback to be idempotent
-
-
-_Design decision_: Types available at *Runtime* are:
-  * `boolean` is in imm, pbv, ext
-  * `int`, `long`, `double` are imm, pbv, ext
-  * `char[t in cu]` is in imm, pbv, ext
-  * `string[t in cu]` is in imm, ext
-  * `ibuffer[t in pbv]` where `t` <: the ibuffer type is in com, is in ext when `t` is in ext
-  * `obuffer[t in pbv]` where `t` <: the obuffer type is in com, is in ext when `t` is in ext
-  * `list[t in pbv]` is in ext when t is in ext where `t` <= the list type
-  * `set[t in imm]` is in ext when t is in ext
-  * `map[k in imm][v in pbv]` where `v` <: the map type, is in ext when each of (k, v) are in ext
-  * `iset[t in pbv]` where `v` <: the set type, is in ext when t is in ext
-  * `imap[k in imm][v in pbv]` where `k` <= the map type and `v` <: the map type,
-     is in ext when exach of (k, v) are in ext
-  * `ptr[t]`. `ptr[t]` orders the same as `t`.
-  * `extlist`, `extmap` is in imm, ext.
-     They allow access to loosely typed, possibly circular external values that precede
-     and outlive any call.
-  * interface types are >:= their greatest type parameter.
-  * class types are >:= max[...members, ...parameter] with possible exception of `rec` fields
-    that must be const initialized at create time so cannot be cyclic.
-
-TODO: Dispatch based on type tag, endpoint.  An endpoint is either an opaque symbol or a textual names.
-Symbols can be allocated prior to the *Type* stage.  External APIs must be name based.
-
-TODO: An allocator can be created prior to the *Type* stage that takes a state vector description
-and produces zeroed regions of memory with enough room for the state vector and which tags each
-vector with a type tag.  These correspond to classes.
-
-TODO: An interface type can be created prior to the *Type* stage.  It relates endpoints to method types.
-
-TODO: Interfaces.
-
-TODO: Type parameters via erasure.  Declarations determine variance.
-Specialization for builtin types via host language at construct time.
-This means that variance violations due to type mismatch between parameters
-might not be caught.
-
-TODO: Type unions and intersections.
-
-### Operators
-A major use case of for this language is processing left-to-right over a buffer and
-accumulating output on another buffer.
-
-
-### Function Call Dispatch
-
 
 
 
