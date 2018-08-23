@@ -728,7 +728,7 @@ If library usage documentation has to recommend explicit use of
 an inline operator then we have failed to meet this goal re
 staging.
 
-__Decision__: A Temper phrase's semantics depend on whether it
+_Decision_: A Temper phrase's semantics depend on whether it
 is *satisfied*.  A reference may *expire* at the end of a
 particular stage.  **Code substitution happens implicitly** when a
 satisfied use is about to expire.
@@ -737,7 +737,7 @@ For example, depending on a function's signature, a call to that
 function may become satisfied when the function reference and some
 actual arguments are themselves satisfied.
 
-__Decision__: **Reify stage**.  A program element may refer
+_Decision_: **Reify stage**.  A program element may refer
 to a stage.  An import or export may be available only during
 certain stages.  An exporter may specify default stages for
 imports.
@@ -763,18 +763,18 @@ Implicit inlining has its own set of risks:
    that cannot be alpha-renamed has a meaning tied to the scope
    of a declaration.
 
-__Decision__: Allow Tennent's violations and hygiene violations
+_Decision_: Allow Tennent's violations and hygiene violations
 because desugaring transforms often requires them, but only before
 identifier-to-endpoint resolution and disallow after.
 
-__Decision__: The internal code representation must be trivially
+_Decision_: The internal code representation must be trivially
 mobile.  Temper will define any concepts like `this` and `super` whose
 meaning depends on the scope and which cannot be &alpha;-transformed
 as syntactic sugar.  (This is in contrast to languages like Java where
 `this` and `private` (but not `super`) are first-class concepts in the
 language runtime.)
 
-__Decision__: Define access control via object capability discipline
+_Decision_: Define access control via object capability discipline
 -- ability to reference is sufficient proof of access.  `private`
 endpoints are not enumerable by middle and late stage operations.  It
 must be possible to emit an code fragment that uses a `private`
@@ -803,9 +803,7 @@ TODO: stage specifier grammar as prefix operator.
 
 
 
-_Decision_: **Reify lifecycle stage** of a program.
-
-
+## Testing
 
 One common reason that APIs relax access control is to allow test code
 privileged access to better interrogate production code.  Debugging
@@ -874,9 +872,9 @@ The gatherer parses the markdown looking for two kinds of constructs:
 *  Fenced code blocks like
     <pre>
 
-    \`\`\`tmpr
+    ```tmpr
     code
-    \`\`\`
+    ```
 
     </pre>
 *  named URLs like `[name]: example/url/that/ends/with/file.tmpr.md`.
@@ -1034,7 +1032,7 @@ _Design decision_: **Exports must appear in the prologue.**
 
 _Design decision_: **Exports may export to explicit importers, or to
 the containing file.**  This makes it much easier to write example code.
-See `tmpe\`\`\`...\`\`\`` blocks above.  A block can export the same
+See <tt>tmpe\`\`\`...\`\`\`</tt> blocks above.  A block can export the same
 might be exported multiple times with different restrictions, and
 during different ranges of stages.
 
