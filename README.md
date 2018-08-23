@@ -711,19 +711,75 @@ Formal type parameters may have bounds:
 
 ## Staging execution
 
-TODO: other languages have a code type, and operators that inline code.
+Other staged languages (TODO Meta-ML, Scala, Julia) have a code type
+and operators to inline code.  Julia uses dynamic compilation of
+function variants to create efficient variants of nary functions for
+specific *n*.
 
-TODO: goal to allow casual users of early-stage operators meaning explicit dereference out.
+It is a goal for a compiled bundle to be statically analyzable.
+Julia-style just-in-time staging conflicts with that in two ways: it
+prevents analyses that must make whole program assumptions, and it
+requires a bundle to include the runtime compiler and loader so
+complete analyses must account for these powerful meta operators.
 
-TODO: decision reify stage.
+It is a goal to allow casual and novice users to ignore parts of
+the language that are primarily of interest to library authors.
+If library usage documentation has to recommend explicit use of
+an inline operator then we have failed to meet this goal re
+staging.
 
-TODO: functions may be applicable during some stages.
+__Decision__: A Temper phrase's semantics depend on whether it
+is *satisfied*.  A reference may *expire* at the end of a
+particular stage.  **Code substitution happens implicitly** when a
+satisfied use is about to expire.
 
-TODO: symbols, including imports may be available during some stages.
+For example, depending on a function's signature, a call to that
+function may become satisfied when the function reference and some
+actual arguments are themselves satisfied.
 
-TODO: exports may only be usable during certain stages.
+__Decision__: **Reify stage**.  A program element may refer
+to a stage.  An import or export may be available only during
+certain stages.  An exporter may specify default stages for
+imports.
 
-TODO: semantics specified in terms of satisfaction.
+Declarations, imports, and exports may all have stage annotations
+that bound when they are available and uses become satisfied.
+
+This should allow library code to manage satisfaction and expiration.
+
+Implicit inlining has its own set of risks:
+*  Macro hygiene: TODO quote.  The set of symbols manipulable
+   by a macro is at most the set of symbols available from that
+   macros scope, and those symbols mentioned by inputs to the
+   macro.
+*  Inlining uses of `private` symbols may not survive when
+   inlined across trust boundaries.
+*  The kinds of things that violate R.D. Tennent's Correspondence
+   Principle also complicate inlining and outlining refactorings.
+
+   TODO: quote
+
+   This occurs often around `this` and `super` where a name
+   that cannot be alpha-renamed has a meaning tied to the scope
+   of a declaration.
+
+__Decision__: Allow Tennent's violations and hygiene violations
+because desugaring transforms often requires them, but only before
+identifier-to-endpoint resolution and disallow after.
+
+__Decision__: The internal code representation must be trivially
+mobile.  Temper will define any concepts like `this` and `super` whose
+meaning depends on the scope and which cannot be &alpha;-transformed
+as syntactic sugar.  (This is in contrast to languages like Java where
+`this` and `private` (but not `super`) are first-class concepts in the
+language runtime.)
+
+__Decision__: Define access control via object capability discipline
+-- ability to reference is sufficient proof of access.  `private`
+endpoints are not enumerable by middle and late stage operations.  It
+must be possible to emit an code fragment that uses a `private`
+endpoint but which is opaque to middle and late stages so that the
+endpoint does not leak in a way that allows replay attacks.
 
 TODO: each regular stage does a root-to-leaf walk satisfying any nodes that are satisfiable and will not be satisfiable in the next stage.
 
