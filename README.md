@@ -649,8 +649,8 @@ Snapshot & rollback become expensive if we have to reason about all
 the mutable state that could have changed in other scopes.
 
 _Decision_: Post type checks, **only frozen values may escape** the
-scope in which they were created to a broader scope except as a result
-of a function call.
+scope in which they were created to a broader scope except as an
+output of a function call.
 
 The set of values that might roll back due to a failing operation is
 then the set of values reachable via symbols on the stack, and
@@ -777,15 +777,47 @@ language runtime.)
 _Decision_: Define access control via object capability discipline
 -- ability to reference is sufficient proof of access.  `private`
 endpoints are not enumerable by middle and late stage operations.  It
-must be possible to emit an code fragment that uses a `private`
+must be possible to emit a code fragment that uses a `private`
 endpoint but which is opaque to middle and late stages so that the
 endpoint does not leak in a way that allows replay attacks.
 
-TODO: each regular stage does a root-to-leaf walk satisfying any nodes that are satisfiable and will not be satisfiable in the next stage.
+<details>
+  <summary>
 
-TODO: each node carries its owning module.
+Pseudocode for staging a function call: `subject.method(arg0, arg1, ..., argn)`.
 
-TODO: currentStage(module), and callback to recursively satisfy an input available as globals
+  </summary>
+
+1.  If `subject` is satisfied and reduces to a value with a specific type:
+    2.  Let *Tsubject* be the runtime type of `subject`.
+    3.  Let *Smethod* be the signature of `.method` in *Tsubject*.
+    4.  If *Smethod* is available for calling for substitution in the current stage:
+        5.  Let *actuals* = a new empty list
+        6.  Let *locals* = a new empty list
+        7.  Let *satisfied* = true
+        8.  For each *actual* parameter expression in `(arg0, arg1, ..., argn)`:
+            9.  Let *formal* = the formal parameter in *Smethod* corresponding to *actual*.
+            10. Let *local* = a new endpoint with the same descriptive name as *formal*.
+            11. Add to *locals* a local declaration that initializes *local* to *actual*.
+            12. Let *Ractual* = a thunk for the reduced form of *actual*.
+            13. If *formal* expects code:
+                14. Add a code wrapper with {*Ractual*,*local*} to *actuals*.
+            15. Else:
+                16. Let *actualValue*, *actualAvailable* = apply *Ractual*.
+            17. If *actualAvailable*:
+                18. Add *actualValue* to *actuals*.
+            19. Else:
+                20. Set *satisfied* = false.
+                21. Break.
+        22. If *satisfied*:
+            23. Let *result*, *passed* = the result of applying `subject.method` to *actuals*.
+            24. If *passed*:
+                25. Substitute a block expression with *locals* and the body *result* for the call.
+
+</details>
+
+Each regular stage does a root-to-leaf walk trying to simplify nodes that are
+simplifiable but which will not be next stage.
 
 TODO: imports import from a stage of a module which means we need to keep old-stage versions of modules around.
 
