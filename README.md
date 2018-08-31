@@ -788,31 +788,31 @@ Pseudocode for staging a function call: `subject.method(arg0, arg1, ..., argn)`.
 
   </summary>
 
-1.  If `subject` is satisfied and reduces to a value with a specific type:
-    2.  Let *Tsubject* be the runtime type of `subject`.
-    3.  Let *Smethod* be the signature of `.method` in *Tsubject*.
-    4.  If *Smethod* is available for calling for substitution in the current stage:
-        5.  Let *actuals* = a new empty list
-        6.  Let *locals* = a new empty list
-        7.  Let *satisfied* = true
-        8.  For each *actual* parameter expression in `(arg0, arg1, ..., argn)`:
-            9.  Let *formal* = the formal parameter in *Smethod* corresponding to *actual*.
-            10. Let *local* = a new endpoint with the same descriptive name as *formal*.
-            11. Add to *locals* a local declaration that initializes *local* to *actual*.
-            12. Let *Ractual* = a thunk for the reduced form of *actual*.
-            13. If *formal* expects code:
-                14. Add a code wrapper with {*Ractual*,*local*} to *actuals*.
-            15. Else:
-                16. Let *actualValue*, *actualAvailable* = apply *Ractual*.
-            17. If *actualAvailable*:
-                18. Add *actualValue* to *actuals*.
-            19. Else:
-                20. Set *satisfied* = false.
-                21. Break.
-        22. If *satisfied*:
-            23. Let *result*, *passed* = the result of applying `subject.method` to *actuals*.
-            24. If *passed*:
-                25. Substitute a block expression with *locals* and the body *result* for the call.
+*  If `subject` is satisfied and reduces to a value with a specific type:
+   *  Let *Tsubject* be the runtime type of `subject`.
+   *  Let *Smethod* be the signature of `.method` in *Tsubject*.
+   *  If *Smethod* is available for calling for substitution in the current stage:
+       *  Let actuals = a new empty list
+       *  Let *locals* = a new empty list
+       *  Let *satisfied* = true
+       *  For each *actual* parameter expression in `(arg0, arg1, ..., argn)`:
+          *  Let *formal* = the formal parameter in *Smethod* corresponding to *actual*.
+          *  Let *local* = a new endpoint with the same descriptive name as *formal*.
+          *  Add to *locals* a local declaration that initializes *local* to *actual*.
+          *  Let *Ractual* = a thunk for the reduced form of *actual*.
+          *  If *formal* expects code:
+             *  Add a code wrapper with {*Ractual*,*local*} to *actuals*.
+          *  Else:
+             *  Let *actualValue*, *actualAvailable* = apply *Ractual*.
+          *  If *actualAvailable*:
+             *  Add *actualValue* to *actuals*.
+          *  Else:
+             *  Set *satisfied* = false.
+             *  Break.
+       *  If *satisfied*:
+          *  Let *result*, *passed* = the result of applying `subject.method` to *actuals*.
+          *  If *passed*:
+             *  Substitute a block expression with *locals* and the body *result* for the call.
 
 </details>
 
