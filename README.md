@@ -648,6 +648,8 @@ lifecycle stage.
 Snapshot & rollback become expensive if we have to reason about all
 the mutable state that could have changed in other scopes.
 
+<span id="no-lateral-escape"></span>
+
 _Decision_: Post type checks, **only frozen values may escape** the
 scope in which they were created to a broader scope except as an
 output of a function call.
@@ -655,6 +657,13 @@ output of a function call.
 The set of values that might roll back due to a failing operation is
 then the set of values reachable via symbols on the stack, and
 any mutable global state.
+
+An arbitrary function cannot be programatically frozen without
+changing its semantics.  A function is freezable only if closed-over
+state is not assigned after the function escapes and it has an
+immutable type.  We should probably relax the immutable type constraint
+for specially marked declarations to allow memoization.
+
 
 ### Types
 
@@ -711,45 +720,85 @@ Formal type parameters may have bounds:
 
 ## Staging execution
 
-Other staged languages (TODO Meta-ML, Scala, Julia) have a code type
-and operators to inline code.  Julia uses dynamic compilation of
-function variants to create efficient variants of nary functions for
-specific *n*.
+Other staged languages have operators related to staging.
+
+*  Meta-ML has a code type and operators to lift and inline code.
+*  Julia has analogous quoting and interpolation operators, and
+   a per-module Eval function to inline code.
+   Julia also provides macro declarations and calls to simplify
+   metaprogramming.
+   Since Julia bundles the compiler at runtime, it provides
+   library macro to compile and load `@generated` functions as
+   needed.
+*  Scala LMS has a `Rep[T]` type similar to Meta-ML's code type
+   but inlining is implicit.
 
 It is a goal for a compiled bundle to be statically analyzable.
-Julia-style just-in-time staging conflicts with that in two ways: it
-prevents analyses that must make whole program assumptions, and it
-requires a bundle to include the runtime compiler and loader so
-complete analyses must account for these powerful meta operators.
+Julia-style just-in-time function generation conflicts with that in
+two ways: it prevents analyses that must make whole program
+assumptions, and it requires a bundle to include the runtime compiler
+and loader so complete analyses must account for these powerful meta
+operators.
 
 It is a goal to allow casual and novice users to ignore parts of
 the language that are primarily of interest to library authors.
 If library usage documentation has to recommend explicit use of
-an inline operator then we have failed to meet this goal re
-staging.
+an inline operator or use different syntax to apply macros vs
+functions then we have failed to meet this goal re staging.
 
 _Decision_: A Temper phrase's semantics depend on whether it
 is *satisfied*.  A reference may *expire* at the end of a
 particular stage.  **Code substitution happens implicitly** when a
 satisfied use is about to expire.
 
-Satisfaction is different from reduction.  A local variable reference
-can't be satisfied while there is an unsatisfied assignment to it on
-a branch that reaches the reference.
-
 For example, depending on a function's signature, a call to that
 function may become satisfied when the function reference and some
 actual arguments are themselves satisfied.
 
-_Decision_: **Reify stage**.  A program element may refer
-to a stage.  An import or export may be available only during
-certain stages.  An exporter may specify default stages for
-imports.
+Satisfaction is different from reduction.  A local variable reference
+cannot be satisfied while there is an unsatisfied assignment to it on
+a branch that reaches the reference.
+
+_Decision_: Some objects will persist to the runtime stage, so we will
+need some way for compiled stages to contribute objects to a **data
+pool** rather than all objects created via compiled constructors.
+
+Imports import from a module at a particular stage which means we need
+to keep old-stage versions of modules around.
+
+We should try to stage property and method references in a way that
+is not overly sensitive to the order in which modules advance through
+stages.  We might run into a problem where:
+
+1.  Module A imports object O from Module C at a late stage L
+2.  Module B imports object O from Module B at an early stage E
+3.  Module A progresses to L and mutates O
+4.  Module B progresses to E and sees A's mutation of O
+
+_Decision_: There will be **no export of mutable values.  This may
+fall out of the [no lateral escape](#no-lateral-escape) decision.
+
+Staging of syntax extensions should rely on a small amount of syntax.
+
+_Decision_: **Imports may appear in a syntactically rigid module
+prologue**, so that the earliest stages can find custom lexers &
+parsers.  Simply importing a module during a very early stages may
+affect the semantics of module code.
+
+Modules will need some way to control satisfaction and expiration.
+Defaults should allow library code to manage most of this for
+client code.
+
+_Decision_: **Reify stage ranges**.  A program element may refer to a
+range of stages.  An import or export may be available only during
+certain stages.  An exporter may specify default stages for imports.
 
 Declarations, imports, and exports may all have stage annotations
 that bound when they are available and uses become satisfied.
 
-This should allow library code to manage satisfaction and expiration.
+TODO: stage specifier grammar as prefix operator?  Compare pre vs
+postfix.
+
 
 Implicit inlining has its own set of risks:
 *  Macro hygiene: TODO quote.  The set of symbols manipulable
@@ -771,10 +820,10 @@ _Decision_: Allow Tennent's violations and hygiene violations
 because desugaring transforms often requires them, but only before
 identifier-to-endpoint resolution and disallow after.
 
-_Decision_: The internal code representation must be trivially
-mobile.  Temper will define any concepts like `this` and `super` whose
-meaning depends on the scope and which cannot be &alpha;-transformed
-as syntactic sugar.  (This is in contrast to languages like Java where
+_Decision_: The internal code representation must be trivially mobile.
+Temper will define any concepts like `this` and `super` whose meaning
+depends on the scope and which cannot be &alpha;-transformed as
+syntactic sugar.  (This is in contrast to languages like Java where
 `this` and `private` (but not `super`) are first-class concepts in the
 language runtime.)
 
@@ -818,14 +867,6 @@ endpoint does not leak in a way that allows replay attacks.
 
 Each regular stage does a root-to-leaf walk trying to simplify nodes that are
 simplifiable but which will not be next stage.
-
-TODO: imports import from a stage of a module which means we need to keep old-stage versions of modules around.
-
-TODO: for imports to be able to operate at lex stage, there needs to be a fixed-syntax prologue.
-
-TODO: decision, prologue grammar.
-
-TODO: stage specifier grammar as prefix operator.
 
 
 
@@ -951,9 +992,6 @@ Per macros and the program lifecycle above, after the *Gather* stage,
 chunks of code need to collaborate with other chunks.  We need some way to import
 symbols and export symbols.
 
-_Design decision_: **Imports must all appear in a syntactically rigid
-prologue at the top of an extracted code block**, so that the *Syntax*
-stage can find any custom parsers.
 
 Per our mini-declarative language requirements above, we need a way to
 specify that some tokens are specially handled.
