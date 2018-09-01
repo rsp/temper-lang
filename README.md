@@ -733,6 +733,10 @@ is *satisfied*.  A reference may *expire* at the end of a
 particular stage.  **Code substitution happens implicitly** when a
 satisfied use is about to expire.
 
+Satisfaction is different from reduction.  A local variable reference
+can't be satisfied while there is an unsatisfied assignment to it on
+a branch that reaches the reference.
+
 For example, depending on a function's signature, a call to that
 function may become satisfied when the function reference and some
 actual arguments are themselves satisfied.
@@ -782,37 +786,33 @@ endpoint but which is opaque to middle and late stages so that the
 endpoint does not leak in a way that allows replay attacks.
 
 <details>
-  <summary>
+  <summary>Pseudocode for staging a function call: `subject.method(arg0, arg1, ..., argn)`.</summary>
 
-Pseudocode for staging a function call: `subject.method(arg0, arg1, ..., argn)`.
-
-  </summary>
-
-*  If `subject` is satisfied and reduces to a value with a specific type:
-   *  Let *Tsubject* be the runtime type of `subject`.
+*  If `subject` is satisfied and reduces to a value:
+   *  Let *Tsubject* be the runtime type of `subject`'s value.
    *  Let *Smethod* be the signature of `.method` in *Tsubject*.
    *  If *Smethod* is available for calling for substitution in the current stage:
-       *  Let actuals = a new empty list
-       *  Let *locals* = a new empty list
-       *  Let *satisfied* = true
-       *  For each *actual* parameter expression in `(arg0, arg1, ..., argn)`:
-          *  Let *formal* = the formal parameter in *Smethod* corresponding to *actual*.
-          *  Let *local* = a new endpoint with the same descriptive name as *formal*.
-          *  Add to *locals* a local declaration that initializes *local* to *actual*.
-          *  Let *Ractual* = a thunk for the reduced form of *actual*.
-          *  If *formal* expects code:
-             *  Add a code wrapper with {*Ractual*,*local*} to *actuals*.
-          *  Else:
-             *  Let *actualValue*, *actualAvailable* = apply *Ractual*.
-          *  If *actualAvailable*:
-             *  Add *actualValue* to *actuals*.
-          *  Else:
-             *  Set *satisfied* = false.
-             *  Break.
-       *  If *satisfied*:
-          *  Let *result*, *passed* = the result of applying `subject.method` to *actuals*.
-          *  If *passed*:
-             *  Substitute a block expression with *locals* and the body *result* for the call.
+      *  Let actuals = a new empty list
+      *  Let *locals* = a new empty list
+      *  Let *satisfied* = true
+      *  For each *actual* parameter expression in `(arg0, arg1, ..., argn)`:
+         *  Let *formal* = the formal parameter in *Smethod* corresponding to *actual*.
+         *  Let *local* = a new endpoint with the same descriptive name as *formal*.
+         *  Add to *locals* a local declaration that initializes *local* to *actual*.
+         *  Let *Ractual* = a thunk for the reduced form of *actual*.
+         *  If *formal* expects code:
+            *  Add a code wrapper with {*Ractual*,*local*} to *actuals*.
+         *  Else:
+            *  Let *actualValue*, *actualAvailable* = apply *Ractual*.
+         *  If *actualAvailable*:
+            *  Add *actualValue* to *actuals*.
+         *  Else:
+            *  Set *satisfied* = false.
+            *  Break.
+      *  If *satisfied*:
+         *  Let *result*, *passed* = the result of applying `subject.method` to *actuals*.
+         *  If *passed*:
+            *  Substitute a block expression with *locals* and the body *result* for the call.
 
 </details>
 
