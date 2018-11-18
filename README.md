@@ -733,6 +733,13 @@ Other staged languages have operators related to staging.
 *  Scala LMS has a `Rep[T]` type similar to Meta-ML's code type
    but inlining is implicit.
 
+Scala manages without explicit staging operators though it does have a
+`Rep[T]` type similar to Meta-ML's code type.  C++ and D use templates
+for compile-time meta-programming without any code type or explicit
+staging operators.  Actual template parameters may be typenames,
+templates, function pointer, enum value, or an instance of a literal
+type.
+
 It is a goal for a compiled bundle to be statically analyzable.
 Julia-style just-in-time function generation conflicts with that in
 two ways: it prevents analyses that must make whole program
