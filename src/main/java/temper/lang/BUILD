@@ -30,7 +30,10 @@ java_library(
         [
             "*.java",
             "ast/*.java",
+            "basic/*.java",
             "cli/*.java",
+            "data/*.java",
+            "data/buf/*.java",
             "diagnostic/*.java",
             "gather/*.java",
         ],
