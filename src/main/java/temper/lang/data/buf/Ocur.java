@@ -21,4 +21,12 @@ package temper.lang.data.buf;
  */
 public interface Ocur<T, SLICE> extends Cur<T, SLICE> {
   Obuf<T, SLICE> buffer();
+
+  /**
+   * Attempts to expand capacity to accomodate n more items.
+   *
+   * @return the amount of capacity provided up to n.
+   *    If returned n', then this.advance(n') will be present.
+   */
+  int needCapacity(int n);
 }

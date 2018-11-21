@@ -61,7 +61,9 @@ implements LifeCycle<Ibuf<T, SLICE>, Iobuf<T, SLICE>, Robuf<T, SLICE>>,
     }
 
     int appendSlice(SLICE slice, int left, int right) {
-      return transport.insert(data, length(), slice, left, right);
+      int length = length();
+      transport.ensureCapacity(data, length + right - left);
+      return transport.insert(data, length, slice, left, right);
     }
 
     Robuf<T, SLICE> freeze() {
@@ -70,6 +72,10 @@ implements LifeCycle<Ibuf<T, SLICE>, Iobuf<T, SLICE>, Robuf<T, SLICE>>,
 
     void truncate(int length) {
       transport.truncate(data, length);
+    }
+
+    void ensureCapacity(int newCapacity) {
+      transport.ensureCapacity(data, newCapacity);
     }
   }
 
@@ -100,6 +106,10 @@ implements LifeCycle<Ibuf<T, SLICE>, Iobuf<T, SLICE>, Robuf<T, SLICE>>,
 
   int readInto(int sourceIndex, SLICE dest, int destIndex, int n) {
     return kernel.readInto(sourceIndex, dest, destIndex, n);
+  }
+
+  void ensureCapacity(int newCapacity) {
+    kernel.ensureCapacity(newCapacity);
   }
 
   @Override
@@ -169,12 +179,20 @@ final class IocurImpl<T, SLICE>
   }
 
   @Override
+  public int needCapacity(int n) {
+    Preconditions.checkArgument(n >= 0);
+    int newCapacity = index + n;
+    buffer.ensureCapacity(newCapacity);
+    return newCapacity;
+  }
+
+  @Override
   public TBool countBetweenExceeds(@Nonnull Icur<T, SLICE> other, int n) {
       Preconditions.checkArgument(n >= 0);
     if (other.getClass() != getClass() || other.buffer() != buffer()) {
       return TBool.FAIL;
     }
-    IcurImpl<T, SLICE> x = (IcurImpl<T, SLICE>) other;
+    IocurImpl<T, SLICE> x = (IocurImpl<T, SLICE>) other;
     if (x.index < index) {
       return TBool.FAIL;
     }
