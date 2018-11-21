@@ -74,11 +74,16 @@ implements LifeCycle<Ibuf<T, SLICE>, Iobuf<T, SLICE>, Robuf<T, SLICE>>,
   }
 
   private final TypedKernel<T, SLICE, ?, ?> kernel;
+  private final IocurImpl<T, SLICE> start = new IocurImpl<>(this, 0);
 
   <MUT_STORAGE, IMU_STORAGE>
   Iobuf(Transport<T, SLICE, MUT_STORAGE, IMU_STORAGE> transport,
         MUT_STORAGE data) {
     this.kernel = new TypedKernel<>(transport, data);
+  }
+
+  public IocurImpl<T, SLICE> start() {
+    return start;
   }
 
   public IocurImpl<T, SLICE> end() {
@@ -137,7 +142,7 @@ final class IocurImpl<T, SLICE>
   }
 
   @Override
-  public final Optional<Icur<T, SLICE>> advance(int delta) {
+  public final Optional<? extends Iocur<T, SLICE>> advance(int delta) {
     if (delta == 0) {
       return Optional.of(this);
     }
@@ -173,7 +178,7 @@ final class IocurImpl<T, SLICE>
     if (x.index < index) {
       return TBool.FAIL;
     }
-    return TBool.of(n >= x.index - index);
+    return TBool.of(x.index - index >= n);
   }
 
   @Override
@@ -183,5 +188,22 @@ final class IocurImpl<T, SLICE>
     }
     IocurImpl<T, SLICE> x = (IocurImpl<T, SLICE>) other;
     return PComparison.from(index - x.index);
+  }
+
+  @Override
+  public boolean equals(Object other) {
+    if (this == other) {
+      return true;
+    }
+    if (other == null || other.getClass() != this.getClass()) {
+      return false;
+    }
+    IocurImpl<?, ?> that = (IocurImpl<?, ?>) other;
+    return this.index == that.index && this.buffer == that.buffer;
+  }
+
+  @Override
+  public int hashCode() {
+    return index + 31 * System.identityHashCode(buffer);
   }
 }

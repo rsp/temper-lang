@@ -27,4 +27,10 @@ abstract class CurBase<T, SLICE, B extends Buf<T, SLICE>> implements Cur<T, SLIC
   public final B buffer() {
     return buffer;
   }
+
+  @Override
+  public abstract boolean equals(Object other);
+
+  @Override
+  public abstract int hashCode();
 }

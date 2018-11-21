@@ -76,72 +76,72 @@ public class BufferBuilder<T, SLICE> {
 
   /** Factory for buffers over pass-by-value types. */
   public static BufferBuilder<Character, char[]> builderForChars() {
-    return builderForValuesInternal(null, CodeUnitType.UTF16, Character.class);
+    return builderForValuesInternal(null, CodeUnitType.UTF16, char.class);
   }
 
   /** Factory for buffers over pass-by-value types. */
   public static BufferBuilder<Character, char[]> builderForChars(CharBuffer data) {
-    return builderForValuesInternal(data, CodeUnitType.UTF16, Character.class);
+    return builderForValuesInternal(data, CodeUnitType.UTF16, char.class);
   }
 
   /** Factory for buffers over pass-by-value types. */
   public static BufferBuilder<Short, short[]> builderForShorts() {
-    return builderForValuesInternal(null, CodeUnitType.UTF16, Short.class);
+    return builderForValuesInternal(null, CodeUnitType.UTF16, short.class);
   }
 
   /** Factory for buffers over pass-by-value types. */
   public static BufferBuilder<Short, short[]> builderForShorts(ShortBuffer data) {
-    return builderForValuesInternal(data, CodeUnitType.UTF16, Short.class);
+    return builderForValuesInternal(data, CodeUnitType.UTF16, short.class);
   }
 
   /** Factory for buffers over pass-by-value types. */
   public static BufferBuilder<Integer, int[]> builderForInts() {
-    return builderForValuesInternal(null, CodeUnitType.INT32, Integer.class);
+    return builderForValuesInternal(null, CodeUnitType.INT32, int.class);
   }
 
   /** Factory for buffers over pass-by-value types. */
   public static BufferBuilder<Integer, int[]> builderForInts(IntBuffer data) {
-    return builderForValuesInternal(data, CodeUnitType.INT32, Integer.class);
+    return builderForValuesInternal(data, CodeUnitType.INT32, int.class);
   }
 
   /** Factory for buffers over pass-by-value types. */
   public static BufferBuilder<Integer, int[]> builderForUints() {
-    return builderForValuesInternal(null, CodeUnitType.UTF32, Integer.class);
+    return builderForValuesInternal(null, CodeUnitType.UTF32, int.class);
   }
 
   /** Factory for buffers over pass-by-value types. */
   public static BufferBuilder<Integer, int[]> builderForUints(IntBuffer data) {
-    return builderForValuesInternal(data, CodeUnitType.UTF32, Integer.class);
+    return builderForValuesInternal(data, CodeUnitType.UTF32, int.class);
   }
 
   /** Factory for buffers over pass-by-value types. */
   public static BufferBuilder<Long, long[]> builderForLongs() {
-    return builderForValuesInternal(null, CodeUnitType.INT64, Long.class);
+    return builderForValuesInternal(null, CodeUnitType.INT64, long.class);
   }
 
   /** Factory for buffers over pass-by-value types. */
   public static BufferBuilder<Long, long[]> builderForLongs(LongBuffer data) {
-    return builderForValuesInternal(data, CodeUnitType.INT64, Long.class);
+    return builderForValuesInternal(data, CodeUnitType.INT64, long.class);
   }
 
   /** Factory for buffers over pass-by-value types. */
   public static BufferBuilder<Float, float[]> builderForFloats() {
-    return builderForValuesInternal(null, CodeUnitType.FLOAT32, Float.class);
+    return builderForValuesInternal(null, CodeUnitType.FLOAT32, float.class);
   }
 
   /** Factory for buffers over pass-by-value types. */
   public static BufferBuilder<Float, float[]> builderForFloats(FloatBuffer data) {
-    return builderForValuesInternal(data, CodeUnitType.FLOAT32, Float.class);
+    return builderForValuesInternal(data, CodeUnitType.FLOAT32, float.class);
   }
 
   /** Factory for buffers over pass-by-value types. */
   public static BufferBuilder<Double, double[]> builderForDoubles() {
-    return builderForValuesInternal(null, CodeUnitType.FLOAT64, Double.class);
+    return builderForValuesInternal(null, CodeUnitType.FLOAT64, double.class);
   }
 
   /** Factory for buffers over pass-by-value types. */
   public static BufferBuilder<Double, double[]> builderForDoubles(DoubleBuffer data) {
-    return builderForValuesInternal(data, CodeUnitType.FLOAT64, Double.class);
+    return builderForValuesInternal(data, CodeUnitType.FLOAT64, double.class);
   }
 
   public static <T, SLICE> BufferBuilder<T, SLICE> builderForValues(

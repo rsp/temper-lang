@@ -56,7 +56,12 @@ public final class Channel<T, SLICE> {
     }
 
     @Override
-    public Cur<T, SLICE> end() {
+    public Icur<T, SLICE> start() {
+      throw new Error("TODO");
+    }
+
+    @Override
+    public Icur<T, SLICE> end() {
       throw new Error("TODO");
     }
 

@@ -14,6 +14,16 @@
 
 package temper.lang.data.buf;
 
+import java.util.Optional;
+
 public interface Iocur<T, SLICE> extends Icur<T, SLICE>, Ocur<T, SLICE> {
   Iobuf<T, SLICE> buffer();
+
+  @Override
+  default Optional<? extends Iocur<T, SLICE>> advance() {
+    return advance(1);
+  }
+
+  @Override
+  Optional<? extends Iocur<T, SLICE>> advance(int delta);
 }

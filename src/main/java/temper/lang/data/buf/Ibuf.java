@@ -25,4 +25,10 @@ implements Buf<T, SLICE>, LifeCycle<Ibuf<T, SLICE>, Iobuf<T, SLICE>, Robuf<T, SL
   Ibuf() {
     // Not subclassable outside package
   }
+
+  /** Cursor before the first available or the end of input. */
+  public abstract Icur<T, SLICE> start();
+
+  /** Cursor before the first available or the end of input. */
+  public abstract Icur<T, SLICE> end();
 }

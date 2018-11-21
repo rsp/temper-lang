@@ -68,6 +68,7 @@ public final class Robuf<T, SLICE>
     return kernel.bulkRead(destIndex, destination, left, n);
   }
 
+  @Override
   public final IcurImpl<T, SLICE> start() {
     return start;
   }
@@ -78,7 +79,7 @@ public final class Robuf<T, SLICE>
   }
 
   TBool countBetweenExceeds(int left, int right, int n) {
-    return TBool.of(n >= right - left);
+    return TBool.of(right - left >= n);
   }
 
   @Override
@@ -149,5 +150,22 @@ final class IcurImpl<T, SLICE> extends CurBase<T, SLICE, Robuf<T, SLICE>> implem
       return Optional.of(end);
     }
     return Optional.empty();
+  }
+
+  @Override
+  public boolean equals(Object other) {
+    if (this == other) {
+      return true;
+    }
+    if (other == null || other.getClass() != this.getClass()) {
+      return false;
+    }
+    IcurImpl<?, ?> that = (IcurImpl<?, ?>) other;
+    return this.index == that.index && this.buffer == that.buffer;
+  }
+
+  @Override
+  public int hashCode() {
+    return index + 31 * System.identityHashCode(buffer);
   }
 }
