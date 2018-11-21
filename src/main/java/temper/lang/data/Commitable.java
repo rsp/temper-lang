@@ -24,8 +24,8 @@ public interface Commitable<SNAPSHOT> extends Checkpointable<SNAPSHOT> {
    * conclusions on about portions of its eventual state based on its current
    * state.
    *
-   * <p>Trying to restore to state prior to a commit warrants a system-level
+   * <p>Attempts to restore to state prior to a commit warrant a system-level
    * panic.
    */
-  void commit();
+  void commit(SNAPSHOT snapshot);
 }

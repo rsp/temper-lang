@@ -24,16 +24,25 @@ import java.util.Optional;
  *
  * @param <T> the type of item on the obuf.
  */
-public interface Icur<T> extends Cur<T> {
-  public IBufBase<T> buffer();
+public interface Icur<T, SLICE> extends Cur<T, SLICE> {
+  public Ibuf<T, SLICE> buffer();
 
-  public default Optional<Icur<T>> advance() {
+  public default Optional<Icur<T, SLICE>> advance() {
     return advance(1);
   }
 
   public abstract Optional<T> read();
 
-  public Optional<Icur<T>> advance(int delta);
+  /**
+   * Bulk read of buffer content into a slice.
+   *
+   * @param destination the slice to hold the destination.
+   * @param sliceIndex the first index into slice to change.
+   * @return the number of elements of destination changed.
+   */
+  public abstract int readInto(SLICE destination, int sliceIndex, int n);
+
+  public Optional<Icur<T, SLICE>> advance(int delta);
 
   /**
    * True iff this and other index into the same underlying buffer and this cursor precedes
@@ -41,5 +50,5 @@ public interface Icur<T> extends Cur<T> {
    * Fail iff this and other index into different buffers.
    * False otherwise.
    */
-  public abstract TBool countBetweenExceeds(Icur<T> other, int n);
+  public abstract TBool countBetweenExceeds(Icur<T, SLICE> other, int n);
 }

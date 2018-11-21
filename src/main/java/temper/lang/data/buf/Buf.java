@@ -17,12 +17,17 @@ package temper.lang.data.buf;
 import temper.lang.data.Checkpointable;
 import temper.lang.data.LifeCycle;
 
-/** A base interface for all buffers. */
-public interface Buf<T>
-extends Checkpointable<Cur<T>> {
-  public Cur<T> end();
+/**
+ * A base interface for all buffers.
+ *
+ * @param <T> the type of an element.
+ * @param <SLICE> the type of a group of elements.
+ */
+public interface Buf<T, SLICE>
+extends Checkpointable<Cur<T, SLICE>> {
+  public Cur<T, SLICE> end();
 
-  public default Cur<T> checkpoint() {
+  public default Cur<T, SLICE> checkpoint() {
     return end();
   }
 }

@@ -14,6 +14,6 @@
 
 package temper.lang.data.buf;
 
-public interface Iocur<T> extends Icur<T>, Ocur<T> {
-  Iobuf<T> buffer();
+public interface Iocur<T, SLICE> extends Icur<T, SLICE>, Ocur<T, SLICE> {
+  Iobuf<T, SLICE> buffer();
 }

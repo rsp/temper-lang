@@ -20,8 +20,9 @@ import com.google.common.base.Preconditions;
 /**
  * A cursor into an {@link Obuf}.
  *
- * @param <T> the type of item on the obuf.
+ * @param <T> the type of item on the buffer.
+ * @param <SLICE> the type of a group of elements.
  */
-public interface Cur<T> extends PComparable<Cur<T>> {
-  public Buf<T> buffer();
+public interface Cur<T, SLICE> extends PComparable<Cur<T, SLICE>> {
+  public Buf<T, SLICE> buffer();
 }

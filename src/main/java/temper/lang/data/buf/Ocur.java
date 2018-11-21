@@ -21,6 +21,6 @@ import com.google.common.base.Preconditions;
  *
  * @param <T> the type of item on the obuf.
  */
-public interface Ocur<T> extends Cur<T> {
-  Obuf<T> buffer();
+public interface Ocur<T, SLICE> extends Cur<T, SLICE> {
+  Obuf<T, SLICE> buffer();
 }

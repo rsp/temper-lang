@@ -24,7 +24,7 @@ import java.util.Objects;
  * A crypto-strong hash function output.
  */
 public final class Hash {
-  /** The hash algo output -- the digest bytes. */
+  /** The hash algo output -- the digest arr. */
   public final ByteString bytes;
   /** Algorithm identifier per java crypto API conventions. */
   public final String algo;

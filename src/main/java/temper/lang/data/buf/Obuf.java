@@ -17,15 +17,24 @@ package temper.lang.data.buf;
 import temper.lang.data.Checkpointable;
 
 /**
- * An base class for an append-only output buffer.
+ * An base type for an append-only output buffer.
  *
  * @param <T> the type of item that may be appended.
+ * @param <SLICE> the type of an indexable group of items.
  */
-public interface Obuf<T> extends Buf<T> {
-  Ocur<T> end();
+public interface Obuf<T, SLICE> extends Buf<T, SLICE> {
+  Ocur<T, SLICE> end();
 
   /** Appends to the output buffer. */
   void append(T x);
+
+  /**
+   * Appends slice[left:right] to the output buffer.
+   * @param left inclusive.
+   * @param right exclusive.
+   * @return the number of elements successfully appended.
+   */
+  int appendSlice(SLICE slice, int left, int right);
 
   /** Appends to the output buffer. */
   default void appendAll(Iterable<? extends T> xs) {

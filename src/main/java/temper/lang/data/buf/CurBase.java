@@ -16,7 +16,7 @@ package temper.lang.data.buf;
 
 import com.google.common.base.Preconditions;
 
-abstract class CurBase<T, B extends Buf<T>> implements Cur<T> {
+abstract class CurBase<T, SLICE, B extends Buf<T, SLICE>> implements Cur<T, SLICE> {
   final B buffer;
 
   CurBase(B buffer) {
