@@ -317,12 +317,10 @@ public final class MarkdownFileTest {
 
     @Override
     public String toString() {
-      final StringBuilder sb = new StringBuilder("new CodeDetails(");
-      sb.append("CodeBlockVariant.").append(variant.name());
-      sb.append(", \"").append(code.replace("\n", "\\n")).append('"');
-      sb.append(", ").append(id != null ? '"' + id + '"' : "null");
-      sb.append(')');
-      return sb.toString();
+      return "new CodeDetails(CodeBlockVariant." + variant.name()
+          + ", \"" + code.replace("\n", "\\n") + '"'
+          + ", " + (id != null ? '"' + id + '"' : "null")
+          + ')';
     }
   }
 
