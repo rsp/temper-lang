@@ -21,6 +21,7 @@ import temper.lang.basic.PComparable;
 import temper.lang.basic.TBool;
 
 import java.nio.CharBuffer;
+import java.nio.IntBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -161,15 +162,15 @@ public class IobufTest {
     assertEquals("4", start.countBetweenExceeds(end, 4), TBool.FALSE);
 
     // Read 3, 4, 5
-    for (int nToRead = 3; nToRead <= 5; ++nToRead){
-      char[] ls = new char[] { '?', '?', '?' };
+    for (int nToRead = 3; nToRead <= 5; ++nToRead) {
+      char[] ls = new char[]{'?', '?', '?'};
       int nRead = start.readInto(ls, 0, nToRead);
       assertEquals("[A, B, C], 3", Arrays.toString(ls) + ", " + nRead);
     }
 
     // Read 2
     {
-      char[] ls = new char[] { '?', '?', '?' };
+      char[] ls = new char[]{'?', '?', '?'};
       int nRead = start.readInto(ls, 0, 2);
       assertEquals("[A, B, ?], 2", Arrays.toString(ls) + ", " + nRead);
     }
@@ -184,21 +185,21 @@ public class IobufTest {
 
     // Read 2 from +1
     {
-      char[] ls = new char[] { '?', '?', '?' };
+      char[] ls = new char[]{'?', '?', '?'};
       int nRead = curPlus1.readInto(ls, 0, 2);
       assertEquals("[B, C, ?], 2", Arrays.toString(ls) + ", " + nRead);
     }
 
     // Read 2 from +1 into 1
     {
-      char[] ls = new char[] { '?', '?', '?' };
+      char[] ls = new char[]{'?', '?', '?'};
       int nRead = curPlus1.readInto(ls, 1, 2);
       assertEquals("[?, B, C], 2", Arrays.toString(ls) + ", " + nRead);
     }
 
     // Read past end
     {
-      char[] ls = new char[] { '?', '?', '?', '?' };
+      char[] ls = new char[]{'?', '?', '?', '?'};
       int nRead = end.readInto(ls, 0, 4);
       assertEquals("[?, ?, ?, ?], 0", Arrays.toString(ls) + ", " + nRead);
     }
@@ -219,5 +220,74 @@ public class IobufTest {
     assertEquals(PComparable.PComparison.LESS_THAN, start.tcompareTo(end));
     assertEquals(PComparable.PComparison.UNRELATED,
         start.tcompareTo(BufferBuilder.builderForChars().buildReadOnlyBuf().start()));
+  }
+
+  @Test
+  public void testTruncateRefBuf() {
+    Iobuf<Object, List<Object>> buf = BufferBuilder
+        .builderForReferences(ImmutableList.of(A, B, C))
+        .buildReadWriteBuf();
+    Iocur<Object, List<Object>> start = buf.start();
+
+    Optional<? extends Iocur<Object, List<Object>>> curPlus1Opt = start.advance(1);
+    assertTrue(curPlus1Opt.isPresent());
+    Iocur<Object, List<Object>> curPlus1 = curPlus1Opt.get();
+
+    Optional<? extends Iocur<Object, List<Object>>> curPlus2Opt = start.advance(2);
+    assertTrue(curPlus2Opt.isPresent());
+    Iocur<Object, List<Object>> curPlus2 = curPlus2Opt.get();
+
+    assertEquals(start.countBetweenExceeds(buf.end(), 2), TBool.TRUE);
+    assertEquals(start.countBetweenExceeds(buf.end(), 3), TBool.TRUE);
+    assertEquals(start.countBetweenExceeds(buf.end(), 4), TBool.FALSE);
+
+    // Truncate then recheck
+    buf.restore(curPlus2);
+    // Read 2 from +1 into 1
+    {
+      List<Object> ls = new ArrayList<Object>();
+      ls.add(null);
+      ls.add(null);
+      ls.add(null);
+      int nRead = curPlus1.readInto(ls, 1, 2);
+      assertEquals("[null, B, null], 1", ls.toString() + ", " + nRead);
+    }
+
+    assertEquals(start.countBetweenExceeds(buf.end(), 2), TBool.TRUE);
+    assertEquals(start.countBetweenExceeds(buf.end(), 3), TBool.FALSE);
+    assertEquals(start.countBetweenExceeds(buf.end(), 4), TBool.FALSE);
+  }
+
+  @Test
+  public void testTruncateIntBuf() {
+    Iobuf<Integer, int[]> buf = BufferBuilder
+        .builderForInts(IntBuffer.wrap(new int[]{ 100, 101, 102 }))
+        .buildReadWriteBuf();
+    Iocur<Integer, int[]> start = buf.start();
+
+    Optional<? extends Iocur<Integer, int[]>> curPlus1Opt = start.advance(1);
+    assertTrue(curPlus1Opt.isPresent());
+    Iocur<Integer, int[]> curPlus1 = curPlus1Opt.get();
+
+    Optional<? extends Iocur<Integer, int[]>> curPlus2Opt = start.advance(2);
+    assertTrue(curPlus2Opt.isPresent());
+    Iocur<Integer, int[]> curPlus2 = curPlus2Opt.get();
+
+    assertEquals(start.countBetweenExceeds(buf.end(), 2), TBool.TRUE);
+    assertEquals(start.countBetweenExceeds(buf.end(), 3), TBool.TRUE);
+    assertEquals(start.countBetweenExceeds(buf.end(), 4), TBool.FALSE);
+
+    // Truncate then recheck
+    buf.restore(curPlus2);
+    // Read 2 from +1 into 1
+    {
+      int[] ls = new int[] { -1, -1, -1 };
+      int nRead = curPlus1.readInto(ls, 1, 2);
+      assertEquals("[-1, 101, -1], 1", Arrays.toString(ls) + ", " + nRead);
+    }
+
+    assertEquals(start.countBetweenExceeds(buf.end(), 2), TBool.TRUE);
+    assertEquals(start.countBetweenExceeds(buf.end(), 3), TBool.FALSE);
+    assertEquals(start.countBetweenExceeds(buf.end(), 4), TBool.FALSE);
   }
 }
