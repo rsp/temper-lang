@@ -18,8 +18,7 @@ import temper.lang.basic.CodeUnitType;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 
-import javax.annotation.Nullable;
-import java.nio.Buffer;
+import javax.annotation.Nonnull;
 import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
 import java.nio.DoubleBuffer;
@@ -28,7 +27,6 @@ import java.nio.IntBuffer;
 import java.nio.LongBuffer;
 import java.nio.ShortBuffer;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 
 /**
@@ -68,7 +66,7 @@ final class ReferenceTransport<T>
     extends Transport<T, List<T>, ArrayList<T>, ImmutableList<T>> {
 
   @Override
-  ArrayList<T> ensureCapacity(ArrayList<T> storage, int n) {
+  ArrayList<T> ensureCapacity(@Nonnull ArrayList<T> storage, int n) {
     storage.ensureCapacity(n);
     return storage;
   }
@@ -253,7 +251,7 @@ final class ByteTransport extends ValueTransport<Byte, byte[], WritableByteData,
   }
 
   @Override
-  WritableByteData ensureCapacity(WritableByteData data, int n) {
+  WritableByteData ensureCapacity(@Nonnull WritableByteData data, int n) {
     data.ensureCapacity(n);
     return data;
   }
@@ -317,7 +315,7 @@ final class ByteTransport extends ValueTransport<Byte, byte[], WritableByteData,
 
   @Override
   boolean write(WritableByteData data, int i, Byte x) {
-    data.set(i, x.byteValue());
+    data.set(i, x);
     return true;
   }
 
@@ -430,7 +428,7 @@ final class CharTransport
   }
 
   @Override
-  WritableCharData ensureCapacity(WritableCharData data, int n) {
+  WritableCharData ensureCapacity(@Nonnull WritableCharData data, int n) {
     data.ensureCapacity(n);
     return data;
   }
@@ -484,7 +482,7 @@ final class CharTransport
 
   @Override
   boolean write(WritableCharData data, int i, Character x) {
-    data.set(i, x.charValue());
+    data.set(i, x);
     return true;
   }
 
@@ -587,7 +585,7 @@ final class ShortTransport
   }
 
   @Override
-  WritableShortData ensureCapacity(WritableShortData data, int n) {
+  WritableShortData ensureCapacity(@Nonnull WritableShortData data, int n) {
     data.ensureCapacity(n);
     return data;
   }
@@ -651,7 +649,7 @@ final class ShortTransport
 
   @Override
   boolean write(WritableShortData data, int i, Short x) {
-    data.set(i, x.shortValue());
+    data.set(i, x);
     return true;
   }
 
@@ -754,7 +752,7 @@ final class IntTransport
   }
 
   @Override
-  WritableIntData ensureCapacity(WritableIntData data, int n) {
+  WritableIntData ensureCapacity(@Nonnull WritableIntData data, int n) {
     data.ensureCapacity(n);
     return data;
   }
@@ -818,7 +816,7 @@ final class IntTransport
 
   @Override
   boolean write(WritableIntData data, int i, Integer x) {
-    data.set(i, x.intValue());
+    data.set(i, x);
     return true;
   }
 
@@ -921,7 +919,7 @@ final class LongTransport
   }
 
   @Override
-  WritableLongData ensureCapacity(WritableLongData data, int n) {
+  WritableLongData ensureCapacity(@Nonnull WritableLongData data, int n) {
     data.ensureCapacity(n);
     return data;
   }
@@ -985,7 +983,7 @@ final class LongTransport
 
   @Override
   boolean write(WritableLongData data, int i, Long x) {
-    data.set(i, x.longValue());
+    data.set(i, x);
     return true;
   }
 
@@ -1088,7 +1086,7 @@ final class FloatTransport
   }
 
   @Override
-  WritableFloatData ensureCapacity(WritableFloatData data, int n) {
+  WritableFloatData ensureCapacity(@Nonnull WritableFloatData data, int n) {
     data.ensureCapacity(n);
     return data;
   }
@@ -1152,7 +1150,7 @@ final class FloatTransport
 
   @Override
   boolean write(WritableFloatData data, int i, Float x) {
-    data.set(i, x.floatValue());
+    data.set(i, x);
     return true;
   }
 
@@ -1255,7 +1253,7 @@ final class DoubleTransport
   }
 
   @Override
-  WritableDoubleData ensureCapacity(WritableDoubleData data, int n) {
+  WritableDoubleData ensureCapacity(@Nonnull WritableDoubleData data, int n) {
     data.ensureCapacity(n);
     return data;
   }
@@ -1319,7 +1317,7 @@ final class DoubleTransport
 
   @Override
   boolean write(WritableDoubleData data, int i, Double x) {
-    data.set(i, x.doubleValue());
+    data.set(i, x);
     return true;
   }
 
@@ -1434,7 +1432,7 @@ final class BooleanTransport
   }
 
   @Override
-  WritableBooleanData ensureCapacity(WritableBooleanData data, int n) {
+  WritableBooleanData ensureCapacity(@Nonnull WritableBooleanData data, int n) {
     data.ensureCapacity(n);
     return data;
   }
@@ -1498,7 +1496,7 @@ final class BooleanTransport
 
   @Override
   boolean write(WritableBooleanData data, int i, Boolean x) {
-    data.set(i, x.booleanValue());
+    data.set(i, x);
     return true;
   }
 

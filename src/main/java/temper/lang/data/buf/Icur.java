@@ -15,7 +15,6 @@
 package temper.lang.data.buf;
 
 import temper.lang.basic.TBool;
-import com.google.common.base.Preconditions;
 
 import java.util.Optional;
 

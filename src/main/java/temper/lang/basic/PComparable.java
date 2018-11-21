@@ -14,6 +14,8 @@
 
 package temper.lang.basic;
 
+import com.google.common.base.Preconditions;
+
 import java.util.Optional;
 
 /**
@@ -28,7 +30,9 @@ public interface PComparable<T> extends Comparable<T> {
 
   @Override
   public default int compareTo(T other) {
-    return tcompareTo(other).intOption.get();
+    Optional<Integer> cmp = tcompareTo(other).intOption;
+    Preconditions.checkState(cmp.isPresent());
+    return cmp.get();
   }
 
   /** The result of a partial comparison. */

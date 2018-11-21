@@ -14,22 +14,11 @@
 
 package temper.lang.data.buf;
 
-import temper.lang.basic.CodeUnitType;
 import temper.lang.basic.TBool;
 import temper.lang.data.Imu;
 import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.TreeTraverser;
-import temper.lang.data.LifeCycle;
 
-import java.nio.Buffer;
-import java.nio.ByteBuffer;
-import java.nio.CharBuffer;
-import java.nio.DoubleBuffer;
-import java.nio.FloatBuffer;
-import java.nio.IntBuffer;
-import java.nio.LongBuffer;
-import java.nio.ShortBuffer;
+import javax.annotation.Nonnull;
 import java.util.Optional;
 
 /** A read-only input buffer. */
@@ -63,7 +52,7 @@ public final class Robuf<T, SLICE>
   <MUT_STORAGE, IMU_STORAGE>
   Robuf(Transport<T, SLICE, MUT_STORAGE, IMU_STORAGE> transport,
         IMU_STORAGE data) {
-    this.kernel = new TypedKernel<T, SLICE, MUT_STORAGE, IMU_STORAGE>(transport, data);
+    this.kernel = new TypedKernel<>(transport, data);
     this.start = new IcurImpl<>(this, 0);
     this.end = new IcurImpl<>(this, transport.lengthOfImu(data));
   }
@@ -98,7 +87,7 @@ public final class Robuf<T, SLICE>
   }
 
   @Override
-  public final void restore(Cur<T, SLICE> snapshot) {
+  public final void restore(@Nonnull Cur<T, SLICE> snapshot) {
     Preconditions.checkArgument(snapshot instanceof IcurImpl<?, ?> && snapshot.buffer() == this);
     // Noop
   }
@@ -123,7 +112,7 @@ final class IcurImpl<T, SLICE> extends CurBase<T, SLICE, Robuf<T, SLICE>> implem
   }
 
   @Override
-  public TBool countBetweenExceeds(Icur<T, SLICE> other, int n) {
+  public TBool countBetweenExceeds(@Nonnull Icur<T, SLICE> other, int n) {
     Preconditions.checkArgument(n >= 0);
     if (other.getClass() != getClass() || other.buffer() != buffer()) {
       return TBool.FAIL;
@@ -137,7 +126,7 @@ final class IcurImpl<T, SLICE> extends CurBase<T, SLICE, Robuf<T, SLICE>> implem
   }
 
   @Override
-  public PComparison tcompareTo(Cur<T, SLICE> other) {
+  public PComparison tcompareTo(@Nonnull Cur<T, SLICE> other) {
     if (other.getClass() != getClass() || other.buffer() != buffer()) {
       return PComparison.UNRELATED;
     }
@@ -155,7 +144,7 @@ final class IcurImpl<T, SLICE> extends CurBase<T, SLICE, Robuf<T, SLICE>> implem
     IcurImpl<T, SLICE> end = buffer.end;
     int endIndex = end.index;
     if (newIndex < endIndex) {
-      return Optional.of(new IcurImpl<T, SLICE>(buffer, newIndex));
+      return Optional.of(new IcurImpl<>(buffer, newIndex));
     } else if (newIndex == endIndex) {
       return Optional.of(end);
     }

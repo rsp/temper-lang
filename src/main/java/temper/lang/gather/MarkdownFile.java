@@ -35,7 +35,6 @@ import com.vladsch.flexmark.ast.IndentedCodeBlock;
 import com.vladsch.flexmark.ast.Node;
 import com.vladsch.flexmark.ast.NodeVisitor;
 import com.vladsch.flexmark.ast.Reference;
-import com.vladsch.flexmark.ast.Text;
 import com.vladsch.flexmark.ast.VisitHandler;
 import com.vladsch.flexmark.ast.Visitor;
 import com.vladsch.flexmark.parser.Parser;
@@ -139,12 +138,10 @@ public final class MarkdownFile {
 
   @Override
   public String toString() {
-    final StringBuilder sb = new StringBuilder("MarkdownFile{");
-    sb.append("source=").append(source);
-    sb.append(", namedUrls=").append(namedUrls);
-    sb.append(", compUnits=").append(compUnits);
-    sb.append('}');
-    return sb.toString();
+    return "MarkdownFile{" + "source=" + source
+        + ", namedUrls=" + namedUrls
+        + ", compUnits=" + compUnits
+        + '}';
   }
 
 
@@ -194,7 +191,7 @@ public final class MarkdownFile {
       new NodeVisitor(
           // Find references like
           //   [name]: url
-          new VisitHandler<Reference>(
+          new VisitHandler<>(
               Reference.class,
               new Visitor<Reference>() {
                 @Override
@@ -237,7 +234,7 @@ public final class MarkdownFile {
                   }
                 }
               }),
-          new VisitHandler<Heading>(
+          new VisitHandler<>(
               Heading.class,
               new Visitor<Heading>() {
                 @Override
@@ -270,7 +267,7 @@ public final class MarkdownFile {
                   }
                 }
               }),
-          new VisitHandler<HtmlBlock>(
+          new VisitHandler<>(
               HtmlBlock.class,
               new Visitor<HtmlBlock>() {
                 @Override
@@ -278,7 +275,7 @@ public final class MarkdownFile {
                   htmlBlocks.add(node);
                 }
               }),
-          new VisitHandler<HtmlInnerBlock>(
+          new VisitHandler<>(
               HtmlInnerBlock.class,
               new Visitor<HtmlInnerBlock>() {
                 @Override
@@ -471,7 +468,7 @@ public final class MarkdownFile {
       };
 
       new NodeVisitor(
-          new VisitHandler<Heading>(
+          new VisitHandler<>(
               Heading.class,
               new Visitor<Heading>() {
                 @Override
@@ -484,9 +481,9 @@ public final class MarkdownFile {
                       text, node.getLevel(), ids, ImmutableList.of()));
                 }
               }),
-          new VisitHandler<HtmlBlockBase>(HtmlBlock.class, htmlBlockVisitor),
-          new VisitHandler<HtmlBlockBase>(HtmlInnerBlock.class, htmlBlockVisitor),
-          new VisitHandler<FencedCodeBlock>(
+          new VisitHandler<>(HtmlBlock.class, htmlBlockVisitor),
+          new VisitHandler<>(HtmlInnerBlock.class, htmlBlockVisitor),
+          new VisitHandler<>(
               FencedCodeBlock.class,
               new Visitor<FencedCodeBlock>() {
                 int lastSectionUsed = -1;
@@ -523,7 +520,7 @@ public final class MarkdownFile {
                   }
                 }
               }),
-          new VisitHandler<IndentedCodeBlock>(
+          new VisitHandler<>(
               IndentedCodeBlock.class,
               new Visitor<IndentedCodeBlock>() {
                 @Override

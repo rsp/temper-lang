@@ -14,8 +14,6 @@
 
 package temper.lang.data.buf;
 
-import temper.lang.data.Checkpointable;
-
 /**
  * An base type for an append-only output buffer.
  *

@@ -15,21 +15,11 @@
 package temper.lang.data.buf;
 
 import com.google.common.base.Preconditions;
-import temper.lang.basic.CodeUnitType;
 import temper.lang.basic.TBool;
 import temper.lang.data.LifeCycle;
 import temper.lang.data.Mut;
 
-import java.nio.Buffer;
-import java.nio.ByteBuffer;
-import java.nio.CharBuffer;
-import java.nio.DoubleBuffer;
-import java.nio.FloatBuffer;
-import java.nio.IntBuffer;
-import java.nio.LongBuffer;
-import java.nio.ShortBuffer;
-import java.util.ArrayList;
-import java.util.List;
+import javax.annotation.Nonnull;
 import java.util.Optional;
 
 /**
@@ -88,11 +78,11 @@ implements LifeCycle<Ibuf<T, SLICE>, Iobuf<T, SLICE>, Robuf<T, SLICE>>,
   <MUT_STORAGE, IMU_STORAGE>
   Iobuf(Transport<T, SLICE, MUT_STORAGE, IMU_STORAGE> transport,
         MUT_STORAGE data) {
-    this.kernel = new TypedKernel<T, SLICE, MUT_STORAGE, IMU_STORAGE>(transport, data);
+    this.kernel = new TypedKernel<>(transport, data);
   }
 
   public IocurImpl<T, SLICE> end() {
-    return new IocurImpl<T, SLICE>(this, kernel.length());
+    return new IocurImpl<>(this, kernel.length());
   }
 
   Optional<T> read(int index) {
@@ -128,7 +118,7 @@ implements LifeCycle<Ibuf<T, SLICE>, Iobuf<T, SLICE>, Robuf<T, SLICE>>,
   }
 
   @Override
-  public void restore(Cur<T, SLICE> ss) {
+  public void restore(@Nonnull Cur<T, SLICE> ss) {
     IocurImpl<T, SLICE> ssc = (IocurImpl<T, SLICE>) ss;
     int ssIndex = ssc.index;
     int endIndex = kernel.length();
@@ -156,7 +146,7 @@ final class IocurImpl<T, SLICE>
     IocurImpl<T, SLICE> end = buffer.end();
     int endIndex = end.index;
     if (newIndex < endIndex) {
-      return Optional.of(new IocurImpl<T, SLICE>(buffer, newIndex));
+      return Optional.of(new IocurImpl<>(buffer, newIndex));
     } else if (newIndex == endIndex) {
       return Optional.of(end);
     }
@@ -174,7 +164,7 @@ final class IocurImpl<T, SLICE>
   }
 
   @Override
-  public TBool countBetweenExceeds(Icur<T, SLICE> other, int n) {
+  public TBool countBetweenExceeds(@Nonnull Icur<T, SLICE> other, int n) {
       Preconditions.checkArgument(n >= 0);
     if (other.getClass() != getClass() || other.buffer() != buffer()) {
       return TBool.FAIL;
@@ -187,7 +177,7 @@ final class IocurImpl<T, SLICE>
   }
 
   @Override
-  public PComparison tcompareTo(Cur<T, SLICE> other) {
+  public PComparison tcompareTo(@Nonnull Cur<T, SLICE> other) {
     if (other.getClass() != getClass() || other.buffer() != buffer()) {
       return PComparison.UNRELATED;
     }

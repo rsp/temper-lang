@@ -57,10 +57,8 @@ public final class Metadata {
 
   @Override
   public String toString() {
-    final StringBuilder sb = new StringBuilder("Metadata{");
-    sb.append("timestamp=").append(timestamp);
-    sb.append(", contentHash=").append(contentHash);
-    sb.append('}');
-    return sb.toString();
+    return "Metadata{" + "timestamp=" + timestamp
+        + ", contentHash=" + contentHash
+        + '}';
   }
 }

@@ -16,7 +16,7 @@ package temper.lang.data.buf;
 
 import temper.lang.data.Commitable;
 
-import java.util.Queue;
+import javax.annotation.Nonnull;
 
 /**
  * A commitable buffer which can act as a producer end of a producer-consumer queue
@@ -26,7 +26,7 @@ public final class Channel<T, SLICE> {
   public final Rbuf rbuf = new Rbuf();
   public final Wbuf wbuf = new Wbuf();
 
-  final class Shared<T, SLICE, MUT_STORAGE, IMU_STORAGE> {
+  final class Shared<MUT_STORAGE, IMU_STORAGE> {
     final Transport<T, SLICE, MUT_STORAGE, IMU_STORAGE> transport;
     final MUT_STORAGE storage;
 
@@ -37,7 +37,7 @@ public final class Channel<T, SLICE> {
     }
   }
 
-  private final Shared<T, SLICE, ?, ?> shared;
+  private final Shared<?, ?> shared;
 
   <MUT_STORAGE, IMU_STORAGE>
   Channel(Transport<T, SLICE, MUT_STORAGE, IMU_STORAGE> transport, MUT_STORAGE storage) {
@@ -66,7 +66,7 @@ public final class Channel<T, SLICE> {
     }
 
     @Override
-    public void restore(Cur<T, SLICE> ss) {
+    public void restore(@Nonnull Cur<T, SLICE> ss) {
       throw new Error("TODO");
     }
   }
@@ -103,7 +103,7 @@ public final class Channel<T, SLICE> {
     }
 
     @Override
-    public void restore(Cur<T, SLICE> ss) {
+    public void restore(@Nonnull Cur<T, SLICE> ss) {
       throw new Error("TODO");
     }
   }

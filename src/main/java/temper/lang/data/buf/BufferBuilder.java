@@ -35,16 +35,17 @@ public class BufferBuilder<T, SLICE> {
 
   /** Factory for buffers over arbitrary values. */
   public static <T> BufferBuilder<T, List<T>> builderForReferences() {
-    return builderForReferences(ImmutableList.<T>of());
+    return builderForReferences(ImmutableList.of());
   }
 
   /** Factory for buffers over arbitrary values. */
-  public static <T> BufferBuilder<T, List<T>> builderForReferences(
-      Iterable<? extends T> initial) {
+  public static <T> BufferBuilder<T, List<T>> builderForReferences(Iterable<? extends T> initial) {
     ReferenceTransport<T> rt = new ReferenceTransport<>();
     ArrayList<T> storage = rt.createMutStorage();
     if (initial instanceof Collection<?>) {
-      storage.addAll((Collection<? extends T>) initial);
+      @SuppressWarnings("unchecked")
+      Collection<? extends T> initialCollection = (Collection<? extends T>) initial;
+      storage.addAll(initialCollection);
     } else {
       for (T el : initial) {
         storage.add(el);
@@ -292,16 +293,16 @@ public class BufferBuilder<T, SLICE> {
     }
 
     Ibuf<ELEMENT, SLICE> buildReadOnlyBuf() {
-      return new Robuf<ELEMENT, SLICE>(
+      return new Robuf<>(
           transport, transport.freeze(storage, 0, transport.lengthOfMut(storage)));
     }
 
     Iobuf<ELEMENT, SLICE> buildReadWriteBuf() {
-      return new Iobuf<ELEMENT, SLICE>(transport, storage);
+      return new Iobuf<>(transport, storage);
     }
 
     Channel<ELEMENT, SLICE> buildChannel() {
-      return new Channel<ELEMENT, SLICE>(transport, storage);
+      return new Channel<>(transport, storage);
     }
   }
 

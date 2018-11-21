@@ -31,7 +31,7 @@ public final class HtmlIdentifier {
   public final String text;
 
   HtmlIdentifier(String text) {
-    Preconditions.checkArgument(text != null && !text.isEmpty());
+    Preconditions.checkArgument(!text.isEmpty());
     this.text = text;
   }
 

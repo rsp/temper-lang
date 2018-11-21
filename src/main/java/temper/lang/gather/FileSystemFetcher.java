@@ -21,6 +21,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.protobuf.ByteString;
 
+import javax.annotation.Nonnull;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.URI;
@@ -54,7 +55,7 @@ public final class FileSystemFetcher implements Fetcher {
   }
 
   @Override
-  public Result fetch(URI uri) {
+  public Result fetch(@Nonnull URI uri) {
     if (!uri.isAbsolute() || !"file".equals(uri.getScheme())) {
       return newErrorResult(uri, "Expected absolute file path");
     }

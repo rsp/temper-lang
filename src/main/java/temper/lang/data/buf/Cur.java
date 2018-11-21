@@ -15,7 +15,6 @@
 package temper.lang.data.buf;
 
 import temper.lang.basic.PComparable;
-import com.google.common.base.Preconditions;
 
 /**
  * A cursor into an {@link Obuf}.

@@ -15,7 +15,6 @@
 package temper.lang.data.buf;
 
 import temper.lang.data.Checkpointable;
-import temper.lang.data.LifeCycle;
 
 /**
  * A base interface for all buffers.
