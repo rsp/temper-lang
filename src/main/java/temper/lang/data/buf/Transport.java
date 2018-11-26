@@ -33,7 +33,7 @@ import java.util.List;
  * Abstracts away buffer copies and reads.
  */
 abstract class Transport<ELEMENT, SLICE, MUT_STORAGE, IMU_STORAGE> {
-  abstract MUT_STORAGE ensureCapacity(MUT_STORAGE storage, int n);
+  abstract void ensureCapacity(MUT_STORAGE storage, int n);
 
   abstract int lengthOfImu(IMU_STORAGE storage);
 
@@ -41,9 +41,9 @@ abstract class Transport<ELEMENT, SLICE, MUT_STORAGE, IMU_STORAGE> {
 
   abstract void setLength(MUT_STORAGE storage, int length);
 
-  abstract int moveFromImu(IMU_STORAGE source, int si, MUT_STORAGE destination, int di, int n);
+  abstract void moveFromImu(IMU_STORAGE source, int si, MUT_STORAGE destination, int di, int n);
 
-  abstract int moveFromMut(MUT_STORAGE source, int si, MUT_STORAGE destination, int di, int n);
+  abstract void moveFromMut(MUT_STORAGE source, int si, MUT_STORAGE destination, int di, int n);
 
   abstract IMU_STORAGE freeze(MUT_STORAGE storage, int left, int right);
 
@@ -55,7 +55,7 @@ abstract class Transport<ELEMENT, SLICE, MUT_STORAGE, IMU_STORAGE> {
 
   abstract int bulkReadFromMut(MUT_STORAGE source, int si, SLICE dest, int di, int n);
 
-  abstract boolean write(MUT_STORAGE storage, int i, ELEMENT element);
+  abstract void write(MUT_STORAGE storage, int i, ELEMENT element);
 
   abstract int insert(MUT_STORAGE storage, int i, SLICE slice, int left, int right);
 
@@ -72,9 +72,8 @@ final class ReferenceTransport<T>
     extends Transport<T, List<T>, ArrayList<T>, ImmutableList<T>> {
 
   @Override
-  ArrayList<T> ensureCapacity(@Nonnull ArrayList<T> storage, int n) {
+  void ensureCapacity(@Nonnull ArrayList<T> storage, int n) {
     storage.ensureCapacity(n);
-    return storage;
   }
 
   @Override
@@ -100,15 +99,13 @@ final class ReferenceTransport<T>
   }
 
   @Override
-  int moveFromImu(ImmutableList<T> source, int si, ArrayList<T> destination, int di, int n) {
+  void moveFromImu(ImmutableList<T> source, int si, ArrayList<T> destination, int di, int n) {
     destination.addAll(di, source.subList(si, (si + n)));
-    return n;
   }
 
   @Override
-  int moveFromMut(ArrayList<T> source, int si, ArrayList<T> destination, int di, int n) {
+  void moveFromMut(ArrayList<T> source, int si, ArrayList<T> destination, int di, int n) {
     destination.addAll(di, source.subList(si, (si + n)));
-    return n;
   }
 
   @Override
@@ -153,13 +150,12 @@ final class ReferenceTransport<T>
   }
 
   @Override
-  boolean write(ArrayList<T> ts, int i, T t) {
+  void write(ArrayList<T> ts, int i, T t) {
     if (i == ts.size()) {
       ts.add(i, t);
     } else {
       ts.set(i, t);
     }
-    return true;
   }
 
   @Override
@@ -304,9 +300,8 @@ final class ByteTransport extends ValueTransport<Byte, byte[], WritableByteData,
   }
 
   @Override
-  WritableByteData ensureCapacity(@Nonnull WritableByteData data, int n) {
+  void ensureCapacity(@Nonnull WritableByteData data, int n) {
     data.ensureCapacity(n);
-    return data;
   }
 
   @Override
@@ -325,15 +320,13 @@ final class ByteTransport extends ValueTransport<Byte, byte[], WritableByteData,
   }
 
   @Override
-  int moveFromImu(ByteData source, int si, WritableByteData destination, int di, int n) {
+  void moveFromImu(ByteData source, int si, WritableByteData destination, int di, int n) {
     destination.copyFrom(di, source, si, n);
-    return n;
   }
 
   @Override
-  int moveFromMut(WritableByteData source, int si, WritableByteData destination, int di, int n) {
+  void moveFromMut(WritableByteData source, int si, WritableByteData destination, int di, int n) {
     destination.copyFrom(di, source, si, n);
-    return n;
   }
 
   @Override
@@ -367,9 +360,8 @@ final class ByteTransport extends ValueTransport<Byte, byte[], WritableByteData,
   }
 
   @Override
-  boolean write(WritableByteData data, int i, Byte x) {
+  void write(WritableByteData data, int i, Byte x) {
     data.set(i, x);
-    return true;
   }
 
   @Override
@@ -473,9 +465,8 @@ final class CharTransport
   }
 
   @Override
-  WritableCharData ensureCapacity(@Nonnull WritableCharData data, int n) {
+  void ensureCapacity(@Nonnull WritableCharData data, int n) {
     data.ensureCapacity(n);
-    return data;
   }
 
   @Override
@@ -484,15 +475,13 @@ final class CharTransport
   }
 
   @Override
-  int moveFromImu(CharData source, int si, WritableCharData destination, int di, int n) {
+  void moveFromImu(CharData source, int si, WritableCharData destination, int di, int n) {
     destination.copyFrom(di, source, si, n);
-    return n;
   }
 
   @Override
-  int moveFromMut(WritableCharData source, int si, WritableCharData destination, int di, int n) {
+  void moveFromMut(WritableCharData source, int si, WritableCharData destination, int di, int n) {
     destination.copyFrom(di, source, si, n);
-    return n;
   }
 
   @Override
@@ -526,9 +515,8 @@ final class CharTransport
   }
 
   @Override
-  boolean write(WritableCharData data, int i, Character x) {
+  void write(WritableCharData data, int i, Character x) {
     data.set(i, x);
-    return true;
   }
 
   @Override
@@ -622,9 +610,8 @@ final class ShortTransport
   }
 
   @Override
-  WritableShortData ensureCapacity(@Nonnull WritableShortData data, int n) {
+  void ensureCapacity(@Nonnull WritableShortData data, int n) {
     data.ensureCapacity(n);
-    return data;
   }
 
   @Override
@@ -643,15 +630,13 @@ final class ShortTransport
   }
 
   @Override
-  int moveFromImu(ShortData source, int si, WritableShortData destination, int di, int n) {
+  void moveFromImu(ShortData source, int si, WritableShortData destination, int di, int n) {
     destination.copyFrom(di, source, si, n);
-    return n;
   }
 
   @Override
-  int moveFromMut(WritableShortData source, int si, WritableShortData destination, int di, int n) {
+  void moveFromMut(WritableShortData source, int si, WritableShortData destination, int di, int n) {
     destination.copyFrom(di, source, si, n);
-    return n;
   }
 
   @Override
@@ -685,9 +670,8 @@ final class ShortTransport
   }
 
   @Override
-  boolean write(WritableShortData data, int i, Short x) {
+  void write(WritableShortData data, int i, Short x) {
     data.set(i, x);
-    return true;
   }
 
   @Override
@@ -781,9 +765,8 @@ final class IntTransport
   }
 
   @Override
-  WritableIntData ensureCapacity(@Nonnull WritableIntData data, int n) {
+  void ensureCapacity(@Nonnull WritableIntData data, int n) {
     data.ensureCapacity(n);
-    return data;
   }
 
   @Override
@@ -802,15 +785,13 @@ final class IntTransport
   }
 
   @Override
-  int moveFromImu(IntData source, int si, WritableIntData destination, int di, int n) {
+  void moveFromImu(IntData source, int si, WritableIntData destination, int di, int n) {
     destination.copyFrom(di, source, si, n);
-    return n;
   }
 
   @Override
-  int moveFromMut(WritableIntData source, int si, WritableIntData destination, int di, int n) {
+  void moveFromMut(WritableIntData source, int si, WritableIntData destination, int di, int n) {
     destination.copyFrom(di, source, si, n);
-    return n;
   }
 
   @Override
@@ -844,9 +825,8 @@ final class IntTransport
   }
 
   @Override
-  boolean write(WritableIntData data, int i, Integer x) {
+  void write(WritableIntData data, int i, Integer x) {
     data.set(i, x);
-    return true;
   }
 
   @Override
@@ -940,9 +920,8 @@ final class LongTransport
   }
 
   @Override
-  WritableLongData ensureCapacity(@Nonnull WritableLongData data, int n) {
+  void ensureCapacity(@Nonnull WritableLongData data, int n) {
     data.ensureCapacity(n);
-    return data;
   }
 
   @Override
@@ -961,15 +940,13 @@ final class LongTransport
   }
 
   @Override
-  int moveFromImu(LongData source, int si, WritableLongData destination, int di, int n) {
+  void moveFromImu(LongData source, int si, WritableLongData destination, int di, int n) {
     destination.copyFrom(di, source, si, n);
-    return n;
   }
 
   @Override
-  int moveFromMut(WritableLongData source, int si, WritableLongData destination, int di, int n) {
+  void moveFromMut(WritableLongData source, int si, WritableLongData destination, int di, int n) {
     destination.copyFrom(di, source, si, n);
-    return n;
   }
 
   @Override
@@ -1003,9 +980,8 @@ final class LongTransport
   }
 
   @Override
-  boolean write(WritableLongData data, int i, Long x) {
+  void write(WritableLongData data, int i, Long x) {
     data.set(i, x);
-    return true;
   }
 
   @Override
@@ -1099,9 +1075,8 @@ final class FloatTransport
   }
 
   @Override
-  WritableFloatData ensureCapacity(@Nonnull WritableFloatData data, int n) {
+  void ensureCapacity(@Nonnull WritableFloatData data, int n) {
     data.ensureCapacity(n);
-    return data;
   }
 
   @Override
@@ -1120,15 +1095,13 @@ final class FloatTransport
   }
 
   @Override
-  int moveFromImu(FloatData source, int si, WritableFloatData destination, int di, int n) {
+  void moveFromImu(FloatData source, int si, WritableFloatData destination, int di, int n) {
     destination.copyFrom(di, source, si, n);
-    return n;
   }
 
   @Override
-  int moveFromMut(WritableFloatData source, int si, WritableFloatData destination, int di, int n) {
+  void moveFromMut(WritableFloatData source, int si, WritableFloatData destination, int di, int n) {
     destination.copyFrom(di, source, si, n);
-    return n;
   }
 
   @Override
@@ -1162,9 +1135,8 @@ final class FloatTransport
   }
 
   @Override
-  boolean write(WritableFloatData data, int i, Float x) {
+  void write(WritableFloatData data, int i, Float x) {
     data.set(i, x);
-    return true;
   }
 
   @Override
@@ -1258,9 +1230,8 @@ final class DoubleTransport
   }
 
   @Override
-  WritableDoubleData ensureCapacity(@Nonnull WritableDoubleData data, int n) {
+  void ensureCapacity(@Nonnull WritableDoubleData data, int n) {
     data.ensureCapacity(n);
-    return data;
   }
 
   @Override
@@ -1279,15 +1250,13 @@ final class DoubleTransport
   }
 
   @Override
-  int moveFromImu(DoubleData source, int si, WritableDoubleData destination, int di, int n) {
+  void moveFromImu(DoubleData source, int si, WritableDoubleData destination, int di, int n) {
     destination.copyFrom(di, source, si, n);
-    return n;
   }
 
   @Override
-  int moveFromMut(WritableDoubleData source, int si, WritableDoubleData destination, int di, int n) {
+  void moveFromMut(WritableDoubleData source, int si, WritableDoubleData destination, int di, int n) {
     destination.copyFrom(di, source, si, n);
-    return n;
   }
 
   @Override
@@ -1321,9 +1290,8 @@ final class DoubleTransport
   }
 
   @Override
-  boolean write(WritableDoubleData data, int i, Double x) {
+  void write(WritableDoubleData data, int i, Double x) {
     data.set(i, x);
-    return true;
   }
 
   @Override
@@ -1429,9 +1397,8 @@ final class BooleanTransport
   }
 
   @Override
-  WritableBooleanData ensureCapacity(@Nonnull WritableBooleanData data, int n) {
+  void ensureCapacity(@Nonnull WritableBooleanData data, int n) {
     data.ensureCapacity(n);
-    return data;
   }
 
   @Override
@@ -1450,15 +1417,13 @@ final class BooleanTransport
   }
 
   @Override
-  int moveFromImu(BooleanData source, int si, WritableBooleanData destination, int di, int n) {
+  void moveFromImu(BooleanData source, int si, WritableBooleanData destination, int di, int n) {
     destination.copyFrom(di, source, si, n);
-    return n;
   }
 
   @Override
-  int moveFromMut(WritableBooleanData source, int si, WritableBooleanData destination, int di, int n) {
+  void moveFromMut(WritableBooleanData source, int si, WritableBooleanData destination, int di, int n) {
     destination.copyFrom(di, source, si, n);
-    return n;
   }
 
   @Override
@@ -1492,9 +1457,8 @@ final class BooleanTransport
   }
 
   @Override
-  boolean write(WritableBooleanData data, int i, Boolean x) {
+  void write(WritableBooleanData data, int i, Boolean x) {
     data.set(i, x);
-    return true;
   }
 
   @Override

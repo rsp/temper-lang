@@ -55,7 +55,7 @@ public final class MarkdownFileTest {
       List<SectionDetails> secs,
       String... messages) {
     class CapturingDiagnosticSink implements DiagnosticSink {
-      List<Diagnostic> diagnostics = new ArrayList<>();
+      final List<Diagnostic> diagnostics = new ArrayList<>();
 
       @Override
       public void report(Diagnostic d) {

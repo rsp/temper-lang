@@ -20,7 +20,6 @@ import temper.lang.data.Commitable;
 
 import javax.annotation.Nonnull;
 import java.util.Optional;
-import java.util.concurrent.Semaphore;
 
 /**
  * A channel over which arbitrary data can be communicated from a producer to a consumer.
@@ -54,7 +53,9 @@ import java.util.concurrent.Semaphore;
  * </p>
  */
 public final class Channel<T, SLICE> {
+  /** The read end of the channel. */
   public final Rbuf rbuf = new Rbuf();
+  /** The write end of the channel. */
   public final Wbuf wbuf = new Wbuf();
 
   final class Shared<MUT_STORAGE, IMU_STORAGE> {
@@ -132,13 +133,17 @@ public final class Channel<T, SLICE> {
   private final Object lock = new Object();
   private boolean isClosed = false;
 
+  /**
+   * True the write side has been closed meaning that subsequent writes are no-ops,
+   * and no more content will ever become available for reading.
+   */
   public boolean isClosed() {
-    return isClosed;
+    synchronized (lock) {
+      return isClosed;
+    }
   }
 
   private void close() {
-    boolean releaseWriter;
-    boolean releaseReader;
     int leftToRelease;
     int rightToRelease;
     synchronized (lock) {
@@ -287,9 +292,8 @@ public final class Channel<T, SLICE> {
       if ((cyDelta & ~3L) != 0L) {
         return TBool.FALSE;
       }
-      long thisPos = index;
       long thatPos = cyDelta * capacity + that.index;
-      return (thatPos - thisPos >= n) ? TBool.TRUE : TBool.FALSE;
+      return (thatPos - index >= n) ? TBool.TRUE : TBool.FALSE;
     }
 
     @Override
@@ -678,11 +682,9 @@ public final class Channel<T, SLICE> {
       Preconditions.checkArgument(left <= right);
       waitloop:
       for (; left < right;) {
-        String before = dumpState();
         int nWantToWrite = right - left;
         int sharedIndex;
         int nToWrite;
-        boolean needToWait = false;
         synchronized (lock) {
           if (isClosed) {
             break waitloop;
