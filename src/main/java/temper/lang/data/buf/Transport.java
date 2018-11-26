@@ -138,11 +138,17 @@ final class ReferenceTransport<T>
 
   private int bulkRead(List<T> source, int si, List<T> dest, int di, int n) {
     n = Math.min(n, source.size() - si);
-    int len = dest.size();
-    if (len > di) {
-      dest.subList(di, Math.min(di + n, len)).clear();
+    if (n != 0) {
+      int dend = di + n;
+      int dmid = Math.min(dest.size(), dend);
+      int send = si + n;
+      for (; di < dmid; ++di, ++si) {
+        dest.set(di, source.get(si));
+      }
+      if (di < dend) {
+        dest.addAll(di, source.subList(si, send));
+      }
     }
-    dest.addAll(di, source.subList(si, si + n));
     return n;
   }
 

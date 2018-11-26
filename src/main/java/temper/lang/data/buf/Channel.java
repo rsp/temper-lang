@@ -178,6 +178,19 @@ public final class Channel<T, SLICE> {
     this.capacity = capacity;
   }
 
+  private String dumpState() {
+    char[] state = new char[capacity];
+    java.util.Arrays.fill(state, '.');
+    int i = readStart;
+    for (int j = 0; j < nReadable; ++j, ++i) {
+      state[i % capacity] = 'R';
+    }
+    for (int j = 0; j < nWritten; ++j, ++i) {
+      state[i % capacity] = 'W';
+    }
+    return "[" + new String(state) + "]" + (isClosed ? ":closed" : "");
+  }
+
   static final class RcurImpl<T, SLICE>
       extends CurBase<T, SLICE, Channel<T, SLICE>.Rbuf>
       implements Icur<T, SLICE> {
@@ -441,7 +454,7 @@ public final class Channel<T, SLICE> {
       }
     }
 
-    int readInto(long curCycle, int i, SLICE destination, int sliceIndex, int nWanted) {
+    int readInto(long curCycle, int curIndex, SLICE destination, int sliceIndex, int nWanted) {
       int nRead = 0;
       waitloop:
       for (; nWanted > 0;) {
@@ -449,7 +462,6 @@ public final class Channel<T, SLICE> {
         int bufReadStart;
         int bufNReadable;
         int leftStorageIndex;
-        boolean needToWait = false;
         boolean closed;
         int n;
 
@@ -458,18 +470,14 @@ public final class Channel<T, SLICE> {
           bufReadStart = readStart;
           bufNReadable = nReadable;
           closed = isClosed;
-          leftStorageIndex = (int) ((curCycle - bufCycle) * capacity + i);
+          leftStorageIndex = (int) ((curCycle - bufCycle) * capacity + curIndex);
           n = Math.min(nWanted, bufReadStart + bufNReadable - leftStorageIndex);
-          if (n == 0) {
-            if (closed) {
-              break waitloop;
-            }
-            needToWait = true;
-            System.err.println("1. readerWaiting <- true");
-          }
         }
 
-        if (needToWait) {
+        if (n == 0) {
+          if (closed || nRead != 0) {
+            break waitloop;
+          }
           synchronized (readMonitor) {
             try {
               readMonitor.wait();
@@ -483,7 +491,7 @@ public final class Channel<T, SLICE> {
         leftStorageIndex %= capacity;
         int rightStorageIndex = leftStorageIndex + n;
         if (rightStorageIndex <= capacity) {
-          shared.readInto(leftStorageIndex, destination, i, n);
+          shared.readInto(leftStorageIndex, destination, sliceIndex, n);
         } else {
           int nToBreakPoint = capacity - leftStorageIndex;
           shared.readInto(leftStorageIndex, destination, sliceIndex, nToBreakPoint);
@@ -493,6 +501,8 @@ public final class Channel<T, SLICE> {
 
         nWanted -= n;
         sliceIndex += n;
+        curIndex += n;
+        nRead += n;
         if (nWanted == 0 || isClosed) {
           break waitloop;
         }
@@ -634,7 +644,6 @@ public final class Channel<T, SLICE> {
       waitloop:
       for (;;) {
         int sharedIndex = -1;
-        boolean releaseReader = false;
         boolean needToWait = false;
         synchronized (lock) {
           if (isClosed) {
@@ -646,7 +655,6 @@ public final class Channel<T, SLICE> {
           } else {
             sharedIndex = (readStart + nUsed) % capacity;
             ++nWritten;
-            releaseReader = true;
           }
         }
         if (needToWait) {
@@ -660,11 +668,6 @@ public final class Channel<T, SLICE> {
           continue waitloop;
         }
         shared.write(sharedIndex, x);
-        if (releaseReader) {
-          synchronized (readMonitor) {
-            readMonitor.notifyAll();
-          }
-        }
         return;
       }
     }
@@ -675,28 +678,25 @@ public final class Channel<T, SLICE> {
       Preconditions.checkArgument(left <= right);
       waitloop:
       for (; left < right;) {
+        String before = dumpState();
         int nWantToWrite = right - left;
         int sharedIndex;
         int nToWrite;
-        boolean releaseReader = false;
         boolean needToWait = false;
         synchronized (lock) {
           if (isClosed) {
             break waitloop;
           }
-          sharedIndex = readStart + nReadable + nWritten;
-          int mayWrite = capacity - sharedIndex;
-          sharedIndex %= capacity;
-          if (mayWrite == 0) {
-            needToWait = true;
-            nToWrite = 0;
-          } else {
-            nToWrite = Math.min(mayWrite, nWantToWrite);
-            nWritten += nToWrite;
-            releaseReader = true;
-          }
+          int totalUsed = nReadable + nWritten;
+          int mayWrite = capacity - totalUsed;
+          sharedIndex = (readStart + totalUsed) % capacity;
+          nToWrite = Math.min(mayWrite, nWantToWrite);
+          nWritten += nToWrite;
         }
-        if (needToWait) {
+        if (nToWrite == 0) {
+          if (totalWritten != 0) {
+            break waitloop;
+          }
           synchronized (writeMonitor) {
             try {
               writeMonitor.wait();
@@ -714,11 +714,6 @@ public final class Channel<T, SLICE> {
           int nTrailing = capacity - sharedIndex;
           shared.bulkWrite(sharedIndex, slice, left, left + nTrailing);
           shared.bulkWrite(0, slice, left + nTrailing, rightWritten);
-        }
-        if (releaseReader) {
-          synchronized (readMonitor) {
-            readMonitor.notifyAll();
-          }
         }
         left += nToWrite;
         totalWritten += nToWrite;
