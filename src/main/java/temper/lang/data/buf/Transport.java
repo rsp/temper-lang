@@ -39,7 +39,7 @@ abstract class Transport<ELEMENT, SLICE, MUT_STORAGE, IMU_STORAGE> {
 
   abstract int lengthOfMut(MUT_STORAGE storage);
 
-  abstract void truncate(MUT_STORAGE storage, int length);
+  abstract void setLength(MUT_STORAGE storage, int length);
 
   abstract int moveFromImu(IMU_STORAGE source, int si, MUT_STORAGE destination, int di, int n);
 
@@ -59,7 +59,13 @@ abstract class Transport<ELEMENT, SLICE, MUT_STORAGE, IMU_STORAGE> {
 
   abstract int insert(MUT_STORAGE storage, int i, SLICE slice, int left, int right);
 
+  abstract void bulkWrite(MUT_STORAGE storage, int i, SLICE slice, int left, int right);
+
   abstract MUT_STORAGE createMutStorage();
+
+  void releaseForGc(MUT_STORAGE storage, int left, int right) {
+    // Noop by default
+  }
 }
 
 final class ReferenceTransport<T>
@@ -81,8 +87,16 @@ final class ReferenceTransport<T>
     return storage.size();
   }
 
-  void truncate(ArrayList<T> storage, int length) {
-    storage.subList(length, storage.size()).clear();
+  void setLength(ArrayList<T> storage, int length) {
+    int size = storage.size();
+    if (length < size) {
+      storage.subList(length, size).clear();
+    } else {
+       while (length != size) {
+        storage.add(null);
+        ++size;
+      }
+    }
   }
 
   @Override
@@ -134,7 +148,11 @@ final class ReferenceTransport<T>
 
   @Override
   boolean write(ArrayList<T> ts, int i, T t) {
-    ts.add(i, t);
+    if (i == ts.size()) {
+      ts.add(i, t);
+    } else {
+      ts.set(i, t);
+    }
     return true;
   }
 
@@ -151,8 +169,32 @@ final class ReferenceTransport<T>
     return ts.size() - len;
   }
 
+  @Override
+  void bulkWrite(ArrayList<T> ts, int start, List<T> slice, int left, int right) {
+    int n = right - left;
+    int end = start + n;
+
+    int len = ts.size();
+    int commonEnd = Math.min(end, len);
+    int i = start;
+    int j = left;
+    for (; i < commonEnd; ++i, ++j) {
+      ts.set(i, slice.get(j));
+    }
+    for (; i < len; ++i) {
+      ts.add(null);
+    }
+    ts.addAll(slice.subList(j, right));
+  }
+
   ArrayList<T> createMutStorage() {
     return new ArrayList<>();
+  }
+
+  void releaseForGc(ArrayList<T> storage, int left, int right) {
+    for (int i = left; i < right; ++i) {
+      storage.set(i, null);
+    }
   }
 }
 
@@ -162,6 +204,18 @@ extends Transport<ELEMENT, SLICE, MUT_STORAGE, IMU_STORAGE> {
 
   ValueTransport(CodeUnitType codeUnitType) {
     this.codeUnitType = codeUnitType;
+  }
+
+  final int insert(MUT_STORAGE storage, int i, SLICE slice, int left, int right) {
+    int n = right - left;
+    Preconditions.checkArgument(n >= 0);
+    int storageIndex = lengthOfMut(storage);
+    setLength(storage,storageIndex + n);
+    if (i != storageIndex) {
+      moveFromMut(storage, i, storage, i + n, n);
+    }
+    bulkWrite(storage, storageIndex, slice, left, right);
+    return n;
   }
 }
 
@@ -229,17 +283,10 @@ final class WritableByteData extends ByteData {
     this.limit = limit;
   }
 
-  void insert(int destIndex, byte[] source, int left, int right) {
-    Preconditions.checkArgument(source != arr && destIndex <= limit);
+  void bulkWrite(int destIndex, byte[] source, int left, int right) {
+    Preconditions.checkArgument(destIndex <= limit);
     int n = right - left;
-    if (n == 0) {
-      return;
-    }
-    if (destIndex != limit) {
-      System.arraycopy(arr, destIndex, arr, destIndex + n, limit - destIndex);
-    }
     System.arraycopy(source, left, arr, destIndex, n);
-    limit += n;
   }
 }
 
@@ -267,7 +314,7 @@ final class ByteTransport extends ValueTransport<Byte, byte[], WritableByteData,
   }
 
   @Override
-  void truncate(WritableByteData storage, int length) {
+  void setLength(WritableByteData storage, int length) {
     storage.setLimit(length);
   }
 
@@ -320,9 +367,8 @@ final class ByteTransport extends ValueTransport<Byte, byte[], WritableByteData,
   }
 
   @Override
-  int insert(WritableByteData data, int destIndex, byte[] source, int left, int right) {
-    data.insert(destIndex, source, left, right);
-    return right - left;
+  void bulkWrite(WritableByteData data, int destIndex, byte[] source, int left, int right) {
+    data.bulkWrite(destIndex, source, left, right);
   }
 
   @Override
@@ -395,17 +441,10 @@ final class WritableCharData extends CharData {
     this.limit = limit;
   }
 
-  void insert(int destIndex, char[] source, int left, int right) {
-    Preconditions.checkArgument(source != arr && destIndex <= limit);
+  void bulkWrite(int destIndex, char[] source, int left, int right) {
+    Preconditions.checkArgument(destIndex <= limit);
     int n = right - left;
-    if (n == 0) {
-      return;
-    }
-    if (destIndex != limit) {
-      System.arraycopy(arr, destIndex, arr, destIndex + n, limit - destIndex);
-    }
     System.arraycopy(source, left, arr, destIndex, n);
-    limit += n;
   }
 }
 
@@ -434,7 +473,7 @@ final class CharTransport
   }
 
   @Override
-  void truncate(WritableCharData storage, int length) {
+  void setLength(WritableCharData storage, int length) {
     storage.setLimit(length);
   }
 
@@ -487,9 +526,8 @@ final class CharTransport
   }
 
   @Override
-  int insert(WritableCharData data, int destIndex, char[] source, int left, int right) {
-    data.insert(destIndex, source, left, right);
-    return right - left;
+  void bulkWrite(WritableCharData data, int destIndex, char[] source, int left, int right) {
+    data.bulkWrite(destIndex, source, left, right);
   }
 
   @Override
@@ -562,17 +600,10 @@ final class WritableShortData extends ShortData {
     this.limit = limit;
   }
 
-  void insert(int destIndex, short[] source, int left, int right) {
-    Preconditions.checkArgument(source != arr && destIndex <= limit);
+  void bulkWrite(int destIndex, short[] source, int left, int right) {
+    Preconditions.checkArgument(destIndex <= limit);
     int n = right - left;
-    if (n == 0) {
-      return;
-    }
-    if (destIndex != limit) {
-      System.arraycopy(arr, destIndex, arr, destIndex + n, limit - destIndex);
-    }
     System.arraycopy(source, left, arr, destIndex, n);
-    limit += n;
   }
 }
 
@@ -601,7 +632,7 @@ final class ShortTransport
   }
 
   @Override
-  void truncate(WritableShortData storage, int length) {
+  void setLength(WritableShortData storage, int length) {
     storage.setLimit(length);
   }
 
@@ -654,9 +685,8 @@ final class ShortTransport
   }
 
   @Override
-  int insert(WritableShortData data, int destIndex, short[] source, int left, int right) {
-    data.insert(destIndex, source, left, right);
-    return right - left;
+  void bulkWrite(WritableShortData data, int destIndex, short[] source, int left, int right) {
+    data.bulkWrite(destIndex, source, left, right);
   }
 
   @Override
@@ -729,17 +759,10 @@ final class WritableIntData extends IntData {
     this.limit = limit;
   }
 
-  void insert(int destIndex, int[] source, int left, int right) {
-    Preconditions.checkArgument(source != arr && destIndex <= limit);
+  void bulkWrite(int destIndex, int[] source, int left, int right) {
+    Preconditions.checkArgument(destIndex <= limit);
     int n = right - left;
-    if (n == 0) {
-      return;
-    }
-    if (destIndex != limit) {
-      System.arraycopy(arr, destIndex, arr, destIndex + n, limit - destIndex);
-    }
     System.arraycopy(source, left, arr, destIndex, n);
-    limit += n;
   }
 }
 
@@ -768,7 +791,7 @@ final class IntTransport
   }
 
   @Override
-  void truncate(WritableIntData storage, int length) {
+  void setLength(WritableIntData storage, int length) {
     storage.setLimit(length);
   }
 
@@ -821,9 +844,8 @@ final class IntTransport
   }
 
   @Override
-  int insert(WritableIntData data, int destIndex, int[] source, int left, int right) {
-    data.insert(destIndex, source, left, right);
-    return right - left;
+  void bulkWrite(WritableIntData data, int destIndex, int[] source, int left, int right) {
+    data.bulkWrite(destIndex, source, left, right);
   }
 
   @Override
@@ -896,17 +918,10 @@ final class WritableLongData extends LongData {
     this.limit = limit;
   }
 
-  void insert(int destIndex, long[] source, int left, int right) {
-    Preconditions.checkArgument(source != arr && destIndex <= limit);
+  void bulkWrite(int destIndex, long[] source, int left, int right) {
+    Preconditions.checkArgument(destIndex <= limit);
     int n = right - left;
-    if (n == 0) {
-      return;
-    }
-    if (destIndex != limit) {
-      System.arraycopy(arr, destIndex, arr, destIndex + n, limit - destIndex);
-    }
     System.arraycopy(source, left, arr, destIndex, n);
-    limit += n;
   }
 }
 
@@ -935,7 +950,7 @@ final class LongTransport
   }
 
   @Override
-  void truncate(WritableLongData storage, int length) {
+  void setLength(WritableLongData storage, int length) {
     storage.setLimit(length);
   }
 
@@ -988,9 +1003,8 @@ final class LongTransport
   }
 
   @Override
-  int insert(WritableLongData data, int destIndex, long[] source, int left, int right) {
-    data.insert(destIndex, source, left, right);
-    return right - left;
+  void bulkWrite(WritableLongData data, int destIndex, long[] source, int left, int right) {
+    data.bulkWrite(destIndex, source, left, right);
   }
 
   @Override
@@ -1063,17 +1077,10 @@ final class WritableFloatData extends FloatData {
     this.limit = limit;
   }
 
-  void insert(int destIndex, float[] source, int left, int right) {
-    Preconditions.checkArgument(source != arr && destIndex <= limit);
+  void bulkWrite(int destIndex, float[] source, int left, int right) {
+    Preconditions.checkArgument(destIndex <= limit);
     int n = right - left;
-    if (n == 0) {
-      return;
-    }
-    if (destIndex != limit) {
-      System.arraycopy(arr, destIndex, arr, destIndex + n, limit - destIndex);
-    }
     System.arraycopy(source, left, arr, destIndex, n);
-    limit += n;
   }
 }
 
@@ -1102,7 +1109,7 @@ final class FloatTransport
   }
 
   @Override
-  void truncate(WritableFloatData storage, int length) {
+  void setLength(WritableFloatData storage, int length) {
     storage.setLimit(length);
   }
 
@@ -1155,9 +1162,8 @@ final class FloatTransport
   }
 
   @Override
-  int insert(WritableFloatData data, int destIndex, float[] source, int left, int right) {
-    data.insert(destIndex, source, left, right);
-    return right - left;
+  void bulkWrite(WritableFloatData data, int destIndex, float[] source, int left, int right) {
+    data.bulkWrite(destIndex, source, left, right);
   }
 
   @Override
@@ -1230,17 +1236,10 @@ final class WritableDoubleData extends DoubleData {
     this.limit = limit;
   }
 
-  void insert(int destIndex, double[] source, int left, int right) {
-    Preconditions.checkArgument(source != arr && destIndex <= limit);
+  void bulkWrite(int destIndex, double[] source, int left, int right) {
+    Preconditions.checkArgument(destIndex <= limit);
     int n = right - left;
-    if (n == 0) {
-      return;
-    }
-    if (destIndex != limit) {
-      System.arraycopy(arr, destIndex, arr, destIndex + n, limit - destIndex);
-    }
     System.arraycopy(source, left, arr, destIndex, n);
-    limit += n;
   }
 }
 
@@ -1269,7 +1268,7 @@ final class DoubleTransport
   }
 
   @Override
-  void truncate(WritableDoubleData storage, int length) {
+  void setLength(WritableDoubleData storage, int length) {
     storage.setLimit(length);
   }
 
@@ -1322,9 +1321,8 @@ final class DoubleTransport
   }
 
   @Override
-  int insert(WritableDoubleData data, int destIndex, double[] source, int left, int right) {
-    data.insert(destIndex, source, left, right);
-    return right - left;
+  void bulkWrite(WritableDoubleData data, int destIndex, double[] source, int left, int right) {
+    data.bulkWrite(destIndex, source, left, right);
   }
 
   @Override
@@ -1409,17 +1407,10 @@ final class WritableBooleanData extends BooleanData {
     this.limit = limit;
   }
 
-  void insert(int destIndex, boolean[] source, int left, int right) {
-    Preconditions.checkArgument(source != arr && destIndex <= limit);
+  void bulkWrite(int destIndex, boolean[] source, int left, int right) {
+    Preconditions.checkArgument(destIndex <= limit);
     int n = right - left;
-    if (n == 0) {
-      return;
-    }
-    if (destIndex != limit) {
-      System.arraycopy(arr, destIndex, arr, destIndex + n, limit - destIndex);
-    }
     System.arraycopy(source, left, arr, destIndex, n);
-    limit += n;
   }
 }
 
@@ -1448,7 +1439,7 @@ final class BooleanTransport
   }
 
   @Override
-  void truncate(WritableBooleanData storage, int length) {
+  void setLength(WritableBooleanData storage, int length) {
     storage.setLimit(length);
   }
 
@@ -1501,9 +1492,8 @@ final class BooleanTransport
   }
 
   @Override
-  int insert(WritableBooleanData data, int destIndex, boolean[] source, int left, int right) {
-    data.insert(destIndex, source, left, right);
-    return right - left;
+  void bulkWrite(WritableBooleanData data, int destIndex, boolean[] source, int left, int right) {
+    data.bulkWrite(destIndex, source, left, right);
   }
 
   @Override

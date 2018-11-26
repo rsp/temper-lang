@@ -71,7 +71,7 @@ implements LifeCycle<Ibuf<T, SLICE>, Iobuf<T, SLICE>, Robuf<T, SLICE>>,
     }
 
     void truncate(int length) {
-      transport.truncate(data, length);
+      transport.setLength(data, length);
     }
 
     void ensureCapacity(int newCapacity) {

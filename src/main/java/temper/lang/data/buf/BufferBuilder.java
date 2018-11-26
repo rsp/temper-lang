@@ -301,8 +301,8 @@ public class BufferBuilder<T, SLICE> {
       return new Iobuf<>(transport, storage);
     }
 
-    Channel<ELEMENT, SLICE> buildChannel() {
-      return new Channel<>(transport, storage);
+    Channel<ELEMENT, SLICE> buildChannel(int capacity) {
+      return new Channel<>(transport, storage, capacity);
     }
   }
 
@@ -320,7 +320,7 @@ public class BufferBuilder<T, SLICE> {
     return builderState.buildReadWriteBuf();
   }
 
-  public Channel<T, SLICE> buildChannel() {
-    return builderState.buildChannel();
+  public Channel<T, SLICE> buildChannel(int capacity) {
+    return builderState.buildChannel(capacity);
   }
 }
