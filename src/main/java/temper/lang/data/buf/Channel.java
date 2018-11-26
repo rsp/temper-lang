@@ -24,6 +24,34 @@ import java.util.concurrent.Semaphore;
 
 /**
  * A channel over which arbitrary data can be communicated from a producer to a consumer.
+ *
+ * <p>A channel has a pair of (read, write) Bufs that abstract over a shared
+ * internal buffer that is split into 3 regions:
+ * <ol>
+ *   <li>An immutable portion available for read
+ *   <li>A mutable portion that has been written to
+ *   <li>A portion that may be appended into.
+ * </ol>
+ *
+ * <p>The reader may
+ * <ul>
+ *   <li>read from (1).
+ *   <li>commit to not needing part of (1) which returns it to (3).
+ * </ul>
+ *
+ * <p>The writer may
+ * <ul>
+ *   <li>append to (3) in which case it becomes (2).
+ *   <li>truncate (2) to remove content that was written in error
+ *      returning it to (3).
+ *   <li>commit to not needing to revise part of (2) in which case it becomes (1).
+ * </ul>
+ *
+ * <p>
+ * This assumes a single reader thread, and a single writer thread.
+ * It does not depend on thread identity, so will work if multiple readers/writers
+ * coordinate exclusive access amongst themselves.
+ * </p>
  */
 public final class Channel<T, SLICE> {
   public final Rbuf rbuf = new Rbuf();
