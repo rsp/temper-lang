@@ -145,6 +145,49 @@ public final class ChannelTest {
   }
 
   @Test
+  public void testWriteOneReadOneBoolean() throws Exception {
+    ImmutableList<Boolean> bools = ImmutableList.of(
+        false, true, false, false, true, false, false, false, true,
+        false, false, false, true, false, false, false, false, false,
+        true, false, false, false, false, false, false, true, false);
+
+    for (int capacity = 4; capacity <= 6; ++capacity) {
+      runChannelAbcsTest(
+          (Channel<Boolean, boolean[]>.Wbuf out) -> {
+            for (int i = 0, n = bools.size(); i < n; i += 3) {
+              out.appendAll(bools.subList(i, i + 3));
+              out.commit(out.end());
+            }
+            out.close();
+            return null;
+          },
+          (Channel<Boolean, boolean[]>.Rbuf inp) -> {
+            List<Boolean> output = new ArrayList<>();
+            Icur<Boolean, boolean[]> cur = inp.start();
+            while (true) {
+              Optional<Boolean> l = cur.read();
+              if (l.isPresent()) {
+                output.add(l.get());
+                Optional<? extends Icur<Boolean, boolean[]>> next = cur.advance();
+                if (next.isPresent()) {
+                  cur = next.get();
+                  inp.commit(cur);
+                } else {
+                  break;
+                }
+              } else {
+                break;
+              }
+            }
+            inp.close();
+            return output;
+          },
+          BufferBuilder.builderForBooleans().buildChannel(capacity),
+          bools);
+    }
+  }
+
+  @Test
   public void testWriteManyReadManyRefs() throws Exception {
     for (int capacity = 7; capacity <= 13; capacity += 2) {
       runChannelAbcsTest(

@@ -31,6 +31,12 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
+/**
+ * Factory for buffers and channels.
+ *
+ * @param <T> Type of an element.
+ * @param <SLICE> Type of a group of elements.
+ */
 public class BufferBuilder<T, SLICE> {
 
   /** Factory for buffers over arbitrary values. */
@@ -55,12 +61,12 @@ public class BufferBuilder<T, SLICE> {
   }
 
   /** Factory for buffers over pass-by-value types. */
-  public static BufferBuilder<Boolean, boolean[]> builderForBits() {
+  public static BufferBuilder<Boolean, boolean[]> builderForBooleans() {
     return builderForValuesInternal(null, CodeUnitType.BIT, boolean.class);
   }
 
   /** Factory for buffers over pass-by-value types. */
-  public static BufferBuilder<Boolean, boolean[]> builderForBits(ByteBuffer data) {
+  public static BufferBuilder<Boolean, boolean[]> builderForBooleans(ByteBuffer data) {
     return builderForValuesInternal(data, CodeUnitType.BIT, boolean.class);
   }
 
