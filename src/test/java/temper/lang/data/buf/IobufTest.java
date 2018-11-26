@@ -27,12 +27,13 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
-public class IobufTest {
+public final class IobufTest {
 
-  static final Object A = new Object() { @Override public String toString() { return "A"; } };
-  static final Object B = new Object() { @Override public String toString() { return "B"; } };
-  static final Object C = new Object() { @Override public String toString() { return "C"; } };
-  static final Object D = new Object() { @Override public String toString() { return "D"; } };
+  private static final Object
+      A = new Object() { @Override public String toString() { return "A"; } },
+      B = new Object() { @Override public String toString() { return "B"; } },
+      C = new Object() { @Override public String toString() { return "C"; } },
+      D = new Object() { @Override public String toString() { return "D"; } };
 
   @Test
   public void testRefBufInitialized() {
@@ -45,6 +46,7 @@ public class IobufTest {
   public void testRefBufWritten() {
     Iobuf<Object, List<Object>> buf = BufferBuilder.builderForReferences()
         .buildReadWriteBuf();
+    buf.ensureCapacity(4);
     buf.append(A);
     buf.appendSlice(ImmutableList.of(A, B, C, D),1, 3);
     testRefAbcBuf(buf);
@@ -245,7 +247,7 @@ public class IobufTest {
     buf.restore(curPlus2);
     // Read 2 from +1 into 1
     {
-      List<Object> ls = new ArrayList<Object>();
+      List<Object> ls = new ArrayList<>();
       ls.add(null);
       ls.add(null);
       ls.add(null);

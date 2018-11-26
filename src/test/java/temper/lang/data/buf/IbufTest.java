@@ -28,9 +28,10 @@ import java.util.Optional;
 
 public class IbufTest {
 
-  static final Object A = new Object() { @Override public String toString() { return "A"; } };
-  static final Object B = new Object() { @Override public String toString() { return "B"; } };
-  static final Object C = new Object() { @Override public String toString() { return "C"; } };
+  private static final Object
+      A = new Object() { @Override public String toString() { return "A"; } },
+      B = new Object() { @Override public String toString() { return "B"; } },
+      C = new Object() { @Override public String toString() { return "C"; } };
 
   @Test
   public void testRefBuf() {
